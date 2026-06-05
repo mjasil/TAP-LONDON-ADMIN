@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TAP LONDON — Admin</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --navy:#1a1a2e;--gold:#c9a84c;--gold2:#f0d07a;--bg:#080812;
+  --surface:#0d0d1a;--surface2:#12122a;--border:rgba(201,168,76,0.12);
+  --text:#ffffff;--text2:rgba(255,255,255,0.5);--text3:rgba(255,255,255,0.25);
+  --red:#e55;--green:#7ac9a0;--sidebar:220px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+input,select,textarea,button{font-family:'DM Sans',sans-serif;}
+h1,h2,h3{font-family:'Cormorant Garamond',serif;}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.2);border-radius:4px;}
+
+/* LOGIN */
+#login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);}
+.login-box{width:100%;max-width:360px;padding:20px;}
+.login-logo{text-align:center;margin-bottom:36px;}
+.login-logo h1{font-size:2rem;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.login-logo p{color:var(--text3);font-size:0.72rem;letter-spacing:2px;text-transform:uppercase;margin-top:4px;}
+.login-form{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;padding:28px;}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:0.7rem;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.form-group input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px 14px;color:#fff;font-size:0.88rem;outline:none;transition:border 0.2s;}
+.form-group input:focus{border-color:rgba(201,168,76,0.4);}
+.btn-gold{width:100%;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);border:none;border-radius:8px;padding:13px;font-weight:700;font-size:0.9rem;cursor:pointer;margin-top:8px;transition:opacity 0.2s;}
+.btn-gold:hover{opacity:0.9;}
+.login-error{color:var(--red);font-size:0.76rem;margin-top:8px;text-align:center;}
+
+/* MAIN LAYOUT */
+#app{display:none;height:100vh;overflow:hidden;}
+.layout{display:flex;height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width 0.25s;overflow:hidden;}
+.sidebar.collapsed{width:60px;}
+.sidebar-logo{padding:20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;white-space:nowrap;}
+.sidebar-logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--navy);font-size:0.9rem;flex-shrink:0;}
+.sidebar-logo-text{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:var(--gold);}
+.sidebar-nav{flex:1;padding:10px 8px;overflow-y:auto;}
+.nav-section{font-size:0.58rem;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;padding:12px 8px 6px;white-space:nowrap;overflow:hidden;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;color:var(--text2);font-size:0.82rem;margin-bottom:2px;white-space:nowrap;border:1px solid transparent;transition:all 0.15s;}
+.nav-item:hover{background:rgba(255,255,255,0.04);color:#fff;}
+.nav-item.active{background:rgba(201,168,76,0.1);color:var(--gold);border-color:rgba(201,168,76,0.18);}
+.nav-item .nav-icon{font-size:1rem;flex-shrink:0;width:20px;text-align:center;}
+.sidebar-bottom{padding:10px 8px;border-top:1px solid var(--border);}
+
+/* TOPBAR */
+.topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px;flex-shrink:0;}
+.topbar-toggle{background:none;border:none;color:var(--text2);cursor:pointer;font-size:1.2rem;padding:4px;}
+.topbar-title{flex:1;font-size:0.86rem;color:var(--text2);}
+.topbar-badge{font-size:0.68rem;color:var(--gold);background:rgba(201,168,76,0.1);padding:4px 12px;border-radius:20px;border:1px solid rgba(201,168,76,0.15);}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:24px;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* CARDS / SURFACES */
+.card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:20px;}
+.card-gold{background:rgba(201,168,76,0.05);border:1px solid rgba(201,168,76,0.15);border-radius:12px;padding:16px;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
+.stat-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:18px;}
+.stat-num{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:700;color:var(--gold);line-height:1;}
+.stat-label{font-size:0.62rem;color:var(--text3);letter-spacing:1.2px;text-transform:uppercase;margin-top:4px;}
+
+/* INPUTS */
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:0.68rem;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 13px;color:#fff;font-size:0.84rem;outline:none;transition:border 0.2s;resize:vertical;}
+.field input:focus,.field select,.field textarea:focus{border-color:rgba(201,168,76,0.35);}
+.field select option{background:#1a1a2e;}
+.field .hint{font-size:0.64rem;color:var(--text3);margin-top:3px;}
+
+/* BUTTONS */
+.btn{border:none;border-radius:8px;padding:9px 18px;cursor:pointer;font-size:0.82rem;font-weight:600;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);}
+.btn-secondary{background:rgba(255,255,255,0.06);color:var(--text2);border:1px solid rgba(255,255,255,0.1);}
+.btn-danger{background:rgba(200,80,80,0.1);color:var(--red);border:1px solid rgba(200,80,80,0.2);}
+.btn-sm{padding:5px 12px;font-size:0.74rem;}
+.btn:hover{opacity:0.88;}
+
+/* TABLE / LIST */
+.item-list{display:flex;flex-direction:column;gap:8px;}
+.item-row{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;}
+.item-thumb{width:48px;height:48px;border-radius:8px;object-fit:cover;background:rgba(255,255,255,0.05);flex-shrink:0;}
+.item-info{flex:1;min-width:0;}
+.item-name{font-size:0.86rem;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.item-meta{font-size:0.68rem;color:var(--text3);margin-top:2px;}
+.item-actions{display:flex;gap:6px;flex-shrink:0;}
+.badge{display:inline-block;font-size:0.6rem;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;padding:2px 8px;border-radius:20px;}
+.badge-gold{background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid rgba(201,168,76,0.25);}
+.badge-green{background:rgba(122,201,160,0.1);color:var(--green);}
+.badge-red{background:rgba(220,80,80,0.1);color:var(--red);}
+
+/* FORM GRID */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr;}.sidebar{width:60px;}.sidebar-logo-text,.nav-item span:not(.nav-icon){display:none;}}
+
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:4px;}
+.tab{flex:1;padding:8px;border-radius:7px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:0.78rem;font-weight:500;transition:all 0.15s;text-align:center;}
+.tab.active{background:rgba(201,168,76,0.12);color:var(--gold);}
+
+/* IMAGE UPLOADER */
+.img-drop{border:2px dashed rgba(201,168,76,0.2);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:all 0.2s;position:relative;}
+.img-drop:hover{border-color:rgba(201,168,76,0.4);background:rgba(201,168,76,0.03);}
+.img-drop.dragover{border-color:var(--gold);background:rgba(201,168,76,0.05);}
+.img-preview{width:100%;height:140px;object-fit:cover;border-radius:8px;margin-bottom:8px;}
+.ratio-badge{display:inline-block;background:rgba(201,168,76,0.1);color:var(--gold);border-radius:4px;padding:2px 8px;font-size:0.64rem;font-weight:700;margin-bottom:8px;}
+
+/* TOGGLE */
+.toggle-wrap{display:flex;align-items:center;gap:10px;}
+.toggle{width:42px;height:22px;border-radius:11px;background:rgba(255,255,255,0.12);cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;}
+.toggle.on{background:var(--gold);}
+.toggle-knob{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.3);}
+.toggle.on .toggle-knob{left:23px;}
+.toggle-label{font-size:0.78rem;color:var(--text2);}
+
+/* POPUP PREVIEW */
+.popup-preview{background:var(--navy);border:1px solid rgba(201,168,76,0.2);border-radius:16px;padding:24px;max-width:340px;}
+
+/* AUDIT LOG */
+.log-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+.log-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:5px;}
+.log-text{font-size:0.78rem;color:var(--text2);line-height:1.5;}
+.log-time{font-size:0.66rem;color:var(--text3);}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;position:relative;}
+.modal-close{position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.06);border:none;color:var(--text2);cursor:pointer;width:28px;height:28px;border-radius:50%;font-size:1rem;display:flex;align-items:center;justify-content:center;}
+
+/* AI FILL */
+.ai-box{background:rgba(201,168,76,0.05);border:1px solid rgba(201,168,76,0.18);border-radius:10px;padding:14px;margin-bottom:16px;}
+.ai-box p{font-size:0.74rem;color:var(--text2);margin-bottom:10px;}
+.ai-input-row{display:flex;gap:8px;}
+.ai-input-row input{flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:9px 12px;color:#fff;font-size:0.84rem;outline:none;}
+.ai-status{font-size:0.72rem;color:var(--gold);margin-top:6px;}
+
+/* DRAG HANDLE */
+.drag-handle{cursor:grab;color:var(--text3);font-size:1rem;flex-shrink:0;padding:0 4px;}
+.drag-handle:active{cursor:grabbing;}
+
+/* SEARCH */
+.search-bar{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 14px;color:#fff;font-size:0.84rem;outline:none;margin-bottom:14px;}
+
+/* SECTION HEADER */
+.section-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;}
+.section-title h2{font-size:1.6rem;font-weight:700;color:#fff;margin:0;}
+.section-title p{font-size:0.78rem;color:var(--text3);margin-top:2px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:0.82rem;z-index:9999;display:none;gap:8px;align-items:center;box-shadow:0 8px 32px rgba(0,0,0,0.4);}
+.toast.show{display:flex;}
+.toast.success{border-color:rgba(122,201,160,0.3);color:var(--green);}
+.toast.error{border-color:rgba(220,80,80,0.3);color:var(--red);}
+
+/* LOADING */
+.spinner{width:20px;height:20px;border:2px solid rgba(201,168,76,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.6s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* MULTI LANG */
+.lang-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.lang-tab{padding:5px 12px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:var(--text2);cursor:pointer;font-size:0.74rem;}
+.lang-tab.active{background:rgba(201,168,76,0.12);color:var(--gold);border-color:rgba(201,168,76,0.25);}
+
+/* OFFER BADGE */
+.offer-badge{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);font-size:0.6rem;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:0.5px;}
+
+/* PROGRESS BAR */
+.upload-bar{height:3px;background:rgba(201,168,76,0.15);border-radius:2px;overflow:hidden;margin-top:6px;}
+.upload-bar-fill{height:100%;background:var(--gold);border-radius:2px;transition:width 0.3s;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-page">
+  <div class="login-box">
+    <div class="login-logo">
+      <h1>TAP LONDON</h1>
+      <p>Admin Panel</p>
+    </div>
+    <div class="login-form">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="admin@taplondon.com"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <button class="btn-gold" onclick="doLogin()">Login to Admin</button>
+      <div class="login-error" id="login-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">T</div>
+        <span class="sidebar-logo-text">TAP LONDON</span>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">Main</div>
+        <div class="nav-item active" onclick="showPage('dashboard')">
+          <span class="nav-icon">📊</span><span>Dashboard</span>
+        </div>
+        <div class="nav-section">Content</div>
+        <div class="nav-item" onclick="showPage('places')">
+          <span class="nav-icon">🏛️</span><span>Places</span>
+        </div>
+        <div class="nav-item" onclick="showPage('food')">
+          <span class="nav-icon">🍽️</span><span>Food & Drinks</span>
+        </div>
+        <div class="nav-item" onclick="showPage('shopping')">
+          <span class="nav-icon">🛍️</span><span>Shopping</span>
+        </div>
+        <div class="nav-item" onclick="showPage('nightlife')">
+          <span class="nav-icon">🌙</span><span>Nightlife</span>
+        </div>
+        <div class="nav-item" onclick="showPage('kids')">
+          <span class="nav-icon">👨‍👩‍👧</span><span>Kids & Family</span>
+        </div>
+        <div class="nav-item" onclick="showPage('muslim')">
+          <span class="nav-icon">🕌</span><span>Muslim Guide</span>
+        </div>
+        <div class="nav-item" onclick="showPage('emergency')">
+          <span class="nav-icon">🚨</span><span>Emergency</span>
+        </div>
+        <div class="nav-section">Tools</div>
+        <div class="nav-item" onclick="showPage('popups')">
+          <span class="nav-icon">🎯</span><span>Popups & Offers</span>
+        </div>
+        <div class="nav-item" onclick="showPage('images')">
+          <span class="nav-icon">🖼️</span><span>Image Manager</span>
+        </div>
+        <div class="nav-item" onclick="showPage('nova')">
+          <span class="nav-icon">✨</span><span>NOVA AI Settings</span>
+        </div>
+        <div class="nav-item" onclick="showPage('audit')">
+          <span class="nav-icon">📋</span><span>Audit Log</span>
+        </div>
+        <div class="nav-item" onclick="showPage('settings')">
+          <span class="nav-icon">⚙️</span><span>Settings</span>
+        </div>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="nav-item" onclick="window.open('https://tap-london-kgmq.vercel.app','_blank')">
+          <span class="nav-icon">🌐</span><span>View Site</span>
+        </div>
+        <div class="nav-item" onclick="doLogout()">
+          <span class="nav-icon">🚪</span><span style="color:#e55">Logout</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div style="flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;">
+      <div class="topbar">
+        <button class="topbar-toggle" onclick="toggleSidebar()">☰</button>
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <div class="topbar-badge" id="user-badge">Admin</div>
+      </div>
+      <div class="content">
+
+        <!-- DASHBOARD -->
+        <div class="page active" id="page-dashboard">
+          <div class="section-header">
+            <div class="section-title">
+              <h2>Dashboard</h2>
+              <p>Welcome back. Here's what's live on TAP LONDON.</p>
+            </div>
+            <button class="btn btn-primary" onclick="refreshStats()">↻ Refresh</button>
+          </div>
+          <div class="stat-grid" id="stat-grid">
+            <div class="stat-card"><div class="stat-num" id="stat-places">—</div><div class="stat-label">Places</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-food">—</div><div class="stat-label">Food Items</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-shopping">—</div><div class="stat-label">Shopping</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-nightlife">—</div><div class="stat-label">Nightlife</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-kids">—</div><div class="stat-label">Kids</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-muslim">—</div><div class="stat-label">Muslim Guide</div></div>
+          </div>
+          <div class="card-gold" style="margin-bottom:16px;">
+            <div style="font-size:0.74rem;color:var(--gold);font-weight:600;margin-bottom:8px;">⚡ Quick Actions</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="showPage('places');openAddModal('places')">+ Add Place</button>
+              <button class="btn btn-secondary btn-sm" onclick="showPage('food');openAddModal('food')">+ Add Food</button>
+              <button class="btn btn-secondary btn-sm" onclick="showPage('nightlife');openAddModal('nightlife')">+ Add Nightlife</button>
+              <button class="btn btn-secondary btn-sm" onclick="showPage('popups')">Set Popup</button>
+              <button class="btn btn-secondary btn-sm" onclick="showPage('images')">Upload Image</button>
+            </div>
+          </div>
+          <div class="card">
+            <div style="font-size:0.74rem;color:var(--text2);font-weight:600;margin-bottom:12px;">Recent Activity</div>
+            <div id="recent-log">
+              <div style="font-size:0.78rem;color:var(--text3);text-align:center;padding:20px;">No recent activity</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION PAGES (places, food, shopping, nightlife, kids, muslim, emergency) -->
+        <div class="page" id="page-places"></div>
+        <div class="page" id="page-food"></div>
+        <div class="page" id="page-shopping"></div>
+        <div class="page" id="page-nightlife"></div>
+        <div class="page" id="page-kids"></div>
+        <div class="page" id="page-muslim"></div>
+        <div class="page" id="page-emergency"></div>
+
+        <!-- POPUPS PAGE -->
+        <div class="page" id="page-popups">
+          <div class="section-header">
+            <div class="section-title"><h2>Popups & Offers</h2><p>Control popups across the site</p></div>
+          </div>
+          <div class="tabs">
+            <button class="tab active" onclick="switchPopupTab('global',this)">Global Popup</button>
+            <button class="tab" onclick="switchPopupTab('food',this)">Food Section</button>
+            <button class="tab" onclick="switchPopupTab('nightlife',this)">Nightlife Section</button>
+            <button class="tab" onclick="switchPopupTab('places',this)">Places Section</button>
+          </div>
+          <div id="popup-editor"></div>
+        </div>
+
+        <!-- IMAGE MANAGER -->
+        <div class="page" id="page-images">
+          <div class="section-header">
+            <div class="section-title"><h2>Image Manager</h2><p>Upload images for any section</p></div>
+          </div>
+          <div style="display:grid;grid-template-columns:180px 1fr;gap:20px;">
+            <div>
+              <div style="display:flex;flex-direction:column;gap:4px;" id="img-section-list"></div>
+            </div>
+            <div class="card" id="img-upload-area">
+              <div style="font-size:0.84rem;color:var(--text2);">Select a section from the left</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NOVA AI SETTINGS -->
+        <div class="page" id="page-nova">
+          <div class="section-header">
+            <div class="section-title"><h2>NOVA AI Settings</h2><p>Configure your AI assistant</p></div>
+            <button class="btn btn-primary" onclick="saveNova()">Save Settings</button>
+          </div>
+          <div class="form-grid">
+            <div>
+              <div class="field"><label>Assistant Name</label><input id="nova-name" value="NOVA" placeholder="NOVA"/></div>
+              <div class="field"><label>Welcome Message</label><input id="nova-welcome" placeholder="Hi! How can I help you explore London?"/></div>
+              <div class="field"><label>AI Personality / Tone</label>
+                <select id="nova-tone">
+                  <option>Friendly and helpful</option>
+                  <option>Professional and formal</option>
+                  <option>Fun and casual</option>
+                  <option>Concise and direct</option>
+                </select>
+              </div>
+              <div class="field">
+                <div class="toggle-wrap">
+                  <div class="toggle on" id="nova-toggle" onclick="toggleEl('nova-toggle')"></div>
+                  <span class="toggle-label">NOVA AI Enabled</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="field"><label>System Prompt</label>
+                <textarea id="nova-prompt" style="min-height:160px;" placeholder="You are NOVA, a helpful London travel guide assistant..."></textarea>
+                <div class="hint">This is the instruction given to the AI. Keep it focused on London travel.</div>
+              </div>
+              <div class="field"><label>Suggested Questions (one per line)</label>
+                <textarea id="nova-suggestions" style="min-height:80px;" placeholder="Best places to visit?&#10;Halal restaurants near me?&#10;How to use the tube?"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AUDIT LOG -->
+        <div class="page" id="page-audit">
+          <div class="section-header">
+            <div class="section-title"><h2>Audit Log</h2><p>Every change recorded</p></div>
+            <button class="btn btn-secondary btn-sm" onclick="clearAudit()">Clear Log</button>
+          </div>
+          <div class="card" id="audit-log-list">
+            <div style="font-size:0.78rem;color:var(--text3);text-align:center;padding:24px;">No activity yet</div>
+          </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div class="page" id="page-settings">
+          <div class="section-header">
+            <div class="section-title"><h2>Settings</h2><p>Admin configuration</p></div>
+          </div>
+          <div class="form-grid">
+            <div>
+              <div class="card" style="margin-bottom:14px;">
+                <div style="font-size:0.8rem;font-weight:600;color:#fff;margin-bottom:14px;">Account</div>
+                <div class="field"><label>Admin Email</label><input id="settings-email" readonly style="opacity:0.5;"/></div>
+                <div class="field"><label>New Password</label><input type="password" id="settings-pw" placeholder="Leave blank to keep current"/></div>
+                <button class="btn btn-primary btn-sm" onclick="updatePassword()">Update Password</button>
+              </div>
+              <div class="card">
+                <div style="font-size:0.8rem;font-weight:600;color:#fff;margin-bottom:14px;">Team Members</div>
+                <div id="team-list" style="margin-bottom:12px;"></div>
+                <div style="display:flex;gap:8px;">
+                  <input id="new-member-email" placeholder="Email address" style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:8px 12px;color:#fff;outline:none;font-size:0.82rem;"/>
+                  <button class="btn btn-secondary btn-sm" onclick="addTeamMember()">Add</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="card" style="margin-bottom:14px;">
+                <div style="font-size:0.8rem;font-weight:600;color:#fff;margin-bottom:14px;">Connection Status</div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;justify-content:space-between;font-size:0.8rem;"><span style="color:var(--text2);">Firebase</span><span class="badge badge-green" id="fb-status">Connected</span></div>
+                  <div style="display:flex;justify-content:space-between;font-size:0.8rem;"><span style="color:var(--text2);">Cloudinary</span><span class="badge badge-green">Connected</span></div>
+                  <div style="display:flex;justify-content:space-between;font-size:0.8rem;"><span style="color:var(--text2);">TAP LONDON Site</span><span class="badge badge-green">Live</span></div>
+                </div>
+              </div>
+              <div class="card-gold">
+                <div style="font-size:0.76rem;color:var(--gold);font-weight:600;margin-bottom:6px;">💡 How updates work</div>
+                <div style="font-size:0.74rem;color:var(--text2);line-height:1.7;">All changes save to Firebase instantly. TAP LONDON reads from Firebase in real time. No deploy needed — changes go live immediately.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal">
+  <div class="modal" id="modal-content">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// FIREBASE CONFIG
+// ═══════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyAUCSRPu1PZvDMyw9AHavW8Tr-xW_XR8oE",
+  authDomain: "tap-london.firebaseapp.com",
+  projectId: "tap-london",
+  storageBucket: "tap-london.firebasestorage.app",
+  messagingSenderId: "462099707600",
+  appId: "1:462099707600:web:613186d61a8013423210d5"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// ═══════════════════════════════════════════
+// CLOUDINARY CONFIG
+// ═══════════════════════════════════════════
+const CLOUD = { name:'dygvxcour', preset:'tap_london_upload' };
+
+// ═══════════════════════════════════════════
+// SECTIONS CONFIG
+// ═══════════════════════════════════════════
+const SECTIONS = {
+  places:    { label:'Places',       icon:'🏛️', cats:['Top Attractions','Hidden Gems','Photo Spots','Free Things'], fields:['name','area','category','description','openingHours','entryFee','priceType','mapsUrl','videoUrl'], ratio:'4:3 (800×600px)' },
+  food:      { label:'Food',         icon:'🍽️', cats:['Restaurants','Coffee Shops','Local Spots','Halal Food'],     fields:['name','area','category','cuisine','description','openingHours','priceRange','mustTry','vibe','mapsUrl'], ratio:'4:3 (800×600px)' },
+  shopping:  { label:'Shopping',     icon:'🛍️', cats:['Shopping Areas','Markets','Souvenir Shops'],                 fields:['name','area','category','description','openingHours','priceRange','highlights','mapsUrl'], ratio:'4:3 (800×600px)' },
+  nightlife: { label:'Nightlife',    icon:'🌙', cats:['Bars','Clubs','Live Music','Rooftop Bars'],                  fields:['name','area','category','description','openingHours','entryFee','dressCode','mapsUrl'], ratio:'4:3 (800×600px)' },
+  kids:      { label:'Kids',         icon:'👨‍👩‍👧', cats:['Parks','Museums','Activities','Entertainment'],              fields:['name','area','category','description','openingHours','entryFee','ageRange','mapsUrl'], ratio:'4:3 (800×600px)' },
+  muslim:    { label:'Muslim Guide', icon:'🕌', cats:['Mosques','Halal Food','Prayer Rooms','Islamic Sites'],       fields:['name','area','category','description','openingHours','entryFee','mapsUrl'], ratio:'4:3 (800×600px)' },
+  emergency: { label:'Emergency',    icon:'🚨', cats:['Hospitals','Police','Scam Alerts','Helplines'],              fields:['name','area','category','description','phone','address','mapsUrl'], ratio:'4:3 (800×600px)' },
+};
+
+const LANGS = ['English','Arabic','Urdu','Malayalam','French','Spanish','Turkish','Bengali'];
+const IMAGE_SECTIONS = [
+  {id:'hero',     label:'Homepage Hero',     ratio:'16:9 (1920×1080)'},
+  {id:'places',   label:'Place Cards',       ratio:'4:3 (800×600)'},
+  {id:'food',     label:'Food Cards',        ratio:'4:3 (800×600)'},
+  {id:'shopping', label:'Shopping Cards',    ratio:'4:3 (800×600)'},
+  {id:'nightlife',label:'Nightlife Cards',   ratio:'4:3 (800×600)'},
+  {id:'banner',   label:'Section Banners',   ratio:'3:1 (1200×400)'},
+  {id:'popup',    label:'Popup Image',       ratio:'4:3 (800×600)'},
+  {id:'gallery',  label:'Card Gallery',      ratio:'4:3 (800×600)'},
+];
+
+let currentUser = null;
+let auditLog = [];
+let currentSection = 'places';
+let currentPopupTab = 'global';
+let currentImgSection = null;
+let currentLang = 'English';
+let dragSrc = null;
+
+// ═══════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════
+auth.onAuthStateChanged(user => {
+  if (user) {
+    currentUser = user;
+    document.getElementById('login-page').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-badge').textContent = user.email.split('@')[0];
+    document.getElementById('settings-email').value = user.email;
+    refreshStats();
+    loadAuditLog();
+    loadNovaSettings();
+    renderImgSections();
+    renderPopupEditor('global');
+    // Auto logout after 1 hour
+    setTimeout(doLogout, 3600000);
+  } else {
+    document.getElementById('login-page').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+});
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw = document.getElementById('login-pw').value;
+  const err = document.getElementById('login-err');
+  err.textContent = '';
+  try {
+    await auth.signInWithEmailAndPassword(email, pw);
+  } catch(e) {
+    err.textContent = 'Invalid email or password';
+  }
+}
+
+function doLogout() {
+  auth.signOut();
+}
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'"+id+"'")) n.classList.add('active');
+  });
+  const labels = {'dashboard':'Dashboard','places':'Places','food':'Food & Drinks','shopping':'Shopping','nightlife':'Nightlife','kids':'Kids & Family','muslim':'Muslim Guide','emergency':'Emergency','popups':'Popups & Offers','images':'Image Manager','nova':'NOVA AI Settings','audit':'Audit Log','settings':'Settings'};
+  document.getElementById('topbar-title').textContent = labels[id] || id;
+
+  if (SECTIONS[id]) {
+    currentSection = id;
+    renderSectionPage(id);
+  }
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+// ═══════════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════════
+async function refreshStats() {
+  for (const sec of Object.keys(SECTIONS)) {
+    try {
+      const snap = await db.collection(sec).get();
+      const el = document.getElementById('stat-'+sec);
+      if (el) el.textContent = snap.size;
+    } catch(e) {}
+  }
+}
+
+// ═══════════════════════════════════════════
+// RENDER SECTION PAGE
+// ═══════════════════════════════════════════
+async function renderSectionPage(sec) {
+  const cfg = SECTIONS[sec];
+  const container = document.getElementById('page-'+sec);
+  container.innerHTML = `
+    <div class="section-header">
+      <div class="section-title">
+        <h2>${cfg.icon} ${cfg.label}</h2>
+        <p id="${sec}-count">Loading...</p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="exportSection('${sec}')">⬇ Export JSON</button>
+        <button class="btn btn-primary" onclick="openAddModal('${sec}')">+ Add ${cfg.label}</button>
+      </div>
+    </div>
+    <input class="search-bar" placeholder="Search ${cfg.label.toLowerCase()}..." oninput="filterList('${sec}',this.value)" id="${sec}-search"/>
+    <div class="item-list" id="${sec}-list">
+      <div style="text-align:center;padding:32px;color:var(--text3);font-size:0.82rem;">Loading...</div>
+    </div>
+  `;
+  loadSectionItems(sec);
+}
+
+async function loadSectionItems(sec) {
+  try {
+    const snap = await db.collection(sec).orderBy('order','asc').get().catch(() => db.collection(sec).get());
+    const items = [];
+    snap.forEach(doc => items.push({id:doc.id,...doc.data()}));
+    renderItemList(sec, items);
+    const cnt = document.getElementById(sec+'-count');
+    if (cnt) cnt.textContent = items.length + ' items';
+    const statEl = document.getElementById('stat-'+sec);
+    if (statEl) statEl.textContent = items.length;
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function renderItemList(sec, items) {
+  const list = document.getElementById(sec+'-list');
+  if (!list) return;
+  if (!items.length) {
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);font-size:0.82rem;">No items yet. Click "+ Add" to get started.</div>';
+    return;
+  }
+  list.innerHTML = items.map((item,i) => `
+    <div class="item-row" draggable="true" data-id="${item.id}" data-sec="${sec}"
+      ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event,'${sec}')">
+      <div class="drag-handle">⋮⋮</div>
+      ${item.image ? `<img class="item-thumb" src="${item.image}" onerror="this.style.display='none'"/>` : `<div class="item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;">${SECTIONS[sec].icon}</div>`}
+      <div class="item-info">
+        <div class="item-name">${item.name || 'Untitled'}</div>
+        <div class="item-meta">${item.category||''} ${item.area ? '· '+item.area : ''} ${item.priceType ? '· '+item.priceType : ''}</div>
+      </div>
+      ${item.featured ? '<span class="offer-badge">Featured</span>' : ''}
+      ${item.offerTag ? '<span class="badge badge-gold">Offer</span>' : ''}
+      <div class="item-actions">
+        <button class="btn btn-secondary btn-sm" onclick="openEditModal('${sec}','${item.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteItem('${sec}','${item.id}','${(item.name||'').replace(/'/g,"\\'")}')">Del</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterList(sec, q) {
+  const rows = document.querySelectorAll(`#${sec}-list .item-row`);
+  rows.forEach(r => {
+    const name = r.querySelector('.item-name')?.textContent.toLowerCase() || '';
+    const meta = r.querySelector('.item-meta')?.textContent.toLowerCase() || '';
+    r.style.display = (name+meta).includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+// ═══════════════════════════════════════════
+// DRAG & DROP REORDER
+// ═══════════════════════════════════════════
+function dragStart(e) { dragSrc = e.currentTarget; e.dataTransfer.effectAllowed='move'; }
+function dragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect='move'; }
+async function dragDrop(e, sec) {
+  e.preventDefault();
+  if (!dragSrc || dragSrc === e.currentTarget) return;
+  const list = document.getElementById(sec+'-list');
+  const rows = [...list.querySelectorAll('.item-row')];
+  const fromIdx = rows.indexOf(dragSrc);
+  const toIdx = rows.indexOf(e.currentTarget);
+  if (fromIdx < 0 || toIdx < 0) return;
+  // Swap in DOM
+  if (fromIdx < toIdx) list.insertBefore(dragSrc, e.currentTarget.nextSibling);
+  else list.insertBefore(dragSrc, e.currentTarget);
+  // Save new order to Firebase
+  const newRows = [...list.querySelectorAll('.item-row')];
+  const batch = db.batch();
+  newRows.forEach((row, i) => {
+    const id = row.dataset.id;
+    if (id) batch.update(db.collection(sec).doc(id), { order: i });
+  });
+  await batch.commit();
+  showToast('Order saved', 'success');
+  addAudit(`Reordered ${sec} cards`);
+}
+
+// ═══════════════════════════════════════════
+// ADD / EDIT MODAL
+// ═══════════════════════════════════════════
+function openAddModal(sec) { openItemModal(sec, null); }
+async function openEditModal(sec, id) {
+  const doc = await db.collection(sec).doc(id).get();
+  openItemModal(sec, {id, ...doc.data()});
+}
+
+function openItemModal(sec, item) {
+  const cfg = SECTIONS[sec];
+  const isEdit = !!item;
+  const val = (k) => item ? (item[k]||'') : '';
+
+  document.getElementById('modal-body').innerHTML = `
+    <h2 style="margin-bottom:4px;">${isEdit ? 'Edit' : 'Add'} ${cfg.label}</h2>
+    <p style="font-size:0.78rem;color:var(--text3);margin-bottom:16px;">${sec}</p>
+
+    <!-- AI FILL -->
+    <div class="ai-box">
+      <p>✨ Type a name and let AI fill all details automatically</p>
+      <div class="ai-input-row">
+        <input id="ai-name-input" placeholder="e.g. Tower Bridge, Dishoom..." value="${val('name')}"/>
+        <button class="btn btn-primary btn-sm" onclick="aiFill('${sec}')">AI Fill</button>
+      </div>
+      <div class="ai-status" id="ai-status"></div>
+    </div>
+
+    <!-- LANGUAGE TABS -->
+    <div style="margin-bottom:4px;font-size:0.68rem;color:var(--text3);letter-spacing:1px;text-transform:uppercase;">Language</div>
+    <div class="lang-tabs" id="lang-tabs">
+      ${LANGS.map(l => `<button class="lang-tab ${l==='English'?'active':''}" onclick="switchLang('${sec}','${item?.id||''}','${l}',this)">${l}</button>`).join('')}
+    </div>
+
+    <div class="form-grid" id="item-form-grid">
+      <!-- LEFT -->
+      <div id="form-left">
+        <div class="field"><label>Name *</label><input id="f-name" value="${val('name')}" placeholder="e.g. Tower Bridge"/></div>
+        <div class="field"><label>Area / Location</label><input id="f-area" value="${val('area')}" placeholder="e.g. Tower Bridge, SE1"/></div>
+        <div class="field"><label>Category</label>
+          <select id="f-category">${cfg.cats.map(c=>`<option ${val('category')===c?'selected':''}>${c}</option>`).join('')}</select>
+        </div>
+        ${cfg.fields.includes('cuisine') ? `<div class="field"><label>Cuisine</label><input id="f-cuisine" value="${val('cuisine')}" placeholder="e.g. Indian, Italian"/></div>` : ''}
+        ${cfg.fields.includes('priceType') ? `<div class="field"><label>Price Type</label><select id="f-priceType"><option ${val('priceType')==='Free'?'selected':''}>Free</option><option ${val('priceType')==='Paid'?'selected':''}>Paid</option></select></div>` : ''}
+        ${cfg.fields.includes('entryFee') ? `<div class="field"><label>Entry Fee</label><input id="f-entryFee" value="${val('entryFee')}" placeholder="e.g. Free / £14.50"/></div>` : ''}
+        ${cfg.fields.includes('priceRange') ? `<div class="field"><label>Price Range</label><input id="f-priceRange" value="${val('priceRange')}" placeholder="e.g. £10-20 per person"/></div>` : ''}
+        ${cfg.fields.includes('openingHours') ? `<div class="field"><label>Opening Hours</label><input id="f-openingHours" value="${val('openingHours')}" placeholder="e.g. Daily 9:00-18:00"/></div>` : ''}
+        ${cfg.fields.includes('mustTry') ? `<div class="field"><label>Must Try</label><input id="f-mustTry" value="${val('mustTry')}" placeholder="e.g. Black Daal"/></div>` : ''}
+        ${cfg.fields.includes('vibe') ? `<div class="field"><label>Vibe</label><input id="f-vibe" value="${val('vibe')}" placeholder="e.g. Date night, Casual"/></div>` : ''}
+        ${cfg.fields.includes('highlights') ? `<div class="field"><label>Highlights</label><input id="f-highlights" value="${val('highlights')}" placeholder="Key features..."/></div>` : ''}
+        ${cfg.fields.includes('dressCode') ? `<div class="field"><label>Dress Code</label><input id="f-dressCode" value="${val('dressCode')}" placeholder="e.g. Smart casual"/></div>` : ''}
+        ${cfg.fields.includes('ageRange') ? `<div class="field"><label>Age Range</label><input id="f-ageRange" value="${val('ageRange')}" placeholder="e.g. All ages / 3+"/></div>` : ''}
+        ${cfg.fields.includes('phone') ? `<div class="field"><label>Phone</label><input id="f-phone" value="${val('phone')}" placeholder="e.g. 999"/></div>` : ''}
+        <div class="field"><label>Google Maps URL</label><input id="f-mapsUrl" value="${val('mapsUrl')}" placeholder="https://maps.google.com/..."/></div>
+        ${cfg.fields.includes('videoUrl') ? `<div class="field"><label>Video URL (optional, 3-10s)</label><input id="f-videoUrl" value="${val('videoUrl')}" placeholder="https://... mp4 link"/><div class="hint">Shown as autoplay loop on detail page</div></div>` : ''}
+        <div class="field"><label>Description</label><textarea id="f-description" style="min-height:90px;">${val('description')}</textarea></div>
+        <!-- OFFER / FEATURED -->
+        <div style="display:flex;gap:16px;margin-top:4px;">
+          <div class="toggle-wrap">
+            <div class="toggle ${item?.featured?'on':''}" id="f-featured-toggle" onclick="toggleEl('f-featured-toggle')"></div>
+            <span class="toggle-label">Featured</span>
+          </div>
+          <div class="toggle-wrap">
+            <div class="toggle ${item?.offerTag?'on':''}" id="f-offer-toggle" onclick="toggleEl('f-offer-toggle')"></div>
+            <span class="toggle-label">Special Offer</span>
+          </div>
+        </div>
+        ${item?.offerTag ? `<div class="field" style="margin-top:10px;"><label>Offer Expiry (optional)</label><input type="datetime-local" id="f-offerExpiry" value="${val('offerExpiry')}"/></div>` : ''}
+      </div>
+
+      <!-- RIGHT -->
+      <div id="form-right">
+        <!-- CARD IMAGE -->
+        <div class="field">
+          <label>Card Image <span class="ratio-badge">${cfg.ratio}</span></label>
+          <div class="img-drop" id="img-drop-main" onclick="document.getElementById('file-main').click()" ondrop="handleDrop(event,'main')" ondragover="event.preventDefault()">
+            ${val('image') ? `<img class="img-preview" src="${val('image')}" id="img-preview-main"/>` : `<div style="font-size:1.5rem;margin-bottom:8px;">📷</div><div style="font-size:0.78rem;color:var(--text3);">Drop or click to upload</div>`}
+          </div>
+          <div class="upload-bar"><div class="upload-bar-fill" id="bar-main" style="width:0%"></div></div>
+          <input type="file" id="file-main" accept="image/*" style="display:none" onchange="uploadImg(this,'main')"/>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <input id="f-image" value="${val('image')}" placeholder="Or paste image URL..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:7px 10px;color:#fff;font-size:0.74rem;outline:none;" oninput="document.getElementById('img-preview-main') && (document.getElementById('img-preview-main').src=this.value)"/>
+          </div>
+        </div>
+
+        <!-- GALLERY IMAGES -->
+        <div class="field">
+          <label>Gallery Images (multiple) <span class="ratio-badge">4:3</span></label>
+          <div id="gallery-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;">
+            ${(item?.gallery||[]).map((url,i)=>`<div style="position:relative;border-radius:6px;overflow:hidden;height:70px;"><img src="${url}" style="width:100%;height:100%;object-fit:cover;"/><button onclick="removeGalleryImg(${i})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);border:none;color:#fff;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:0.6rem;display:flex;align-items:center;justify-content:center;">✕</button></div>`).join('')}
+            <div style="border:2px dashed rgba(201,168,76,0.2);border-radius:6px;height:70px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.2rem;color:var(--text3);" onclick="document.getElementById('file-gallery').click()">+</div>
+          </div>
+          <input type="file" id="file-gallery" accept="image/*" multiple style="display:none" onchange="uploadGallery(this)"/>
+        </div>
+
+        <!-- CARD PREVIEW -->
+        <div class="field">
+          <label>Card Preview</label>
+          <div style="position:relative;border-radius:10px;overflow:hidden;height:150px;background:#111;" id="card-preview-wrap">
+            ${val('image') ? `<img src="${val('image')}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;" id="card-prev-img"/>` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:2rem;color:rgba(255,255,255,0.1);">🖼️</div>'}
+            <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.8) 0%,transparent 60%);"></div>
+            <div style="position:absolute;bottom:12px;left:12px;">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;color:#fff;" id="prev-name">${val('name')||'Place Name'}</div>
+              <div style="font-size:0.68rem;color:rgba(255,255,255,0.5);" id="prev-area">${val('area')||'Area'}</div>
+            </div>
+            ${item?.offerTag ? '<div style="position:absolute;top:10px;right:10px;"><span class="offer-badge">Special Offer</span></div>' : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-primary" onclick="saveItem('${sec}','${item?.id||''}')">
+        ${isEdit ? 'Save Changes' : 'Add '+cfg.label}
+      </button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>
+  `;
+
+  // Live preview updates
+  setTimeout(() => {
+    const nameI = document.getElementById('f-name');
+    const areaI = document.getElementById('f-area');
+    if (nameI) nameI.oninput = () => { const el = document.getElementById('prev-name'); if(el) el.textContent = nameI.value||'Place Name'; };
+    if (areaI) areaI.oninput = () => { const el = document.getElementById('prev-area'); if(el) el.textContent = areaI.value||'Area'; };
+  }, 100);
+
+  document.getElementById('modal').classList.add('open');
+  // Store gallery
+  window._gallery = item?.gallery || [];
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  window._gallery = [];
+}
+
+// ═══════════════════════════════════════════
+// SAVE ITEM
+// ═══════════════════════════════════════════
+async function saveItem(sec, id) {
+  const cfg = SECTIONS[sec];
+  const data = {
+    name: v('f-name'), area: v('f-area'), category: v('f-category'),
+    description: v('f-description'), mapsUrl: v('f-mapsUrl'),
+    image: v('f-image'), gallery: window._gallery || [],
+    featured: document.getElementById('f-featured-toggle')?.classList.contains('on') || false,
+    offerTag: document.getElementById('f-offer-toggle')?.classList.contains('on') || false,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+  // Optional fields
+  ['cuisine','priceType','entryFee','priceRange','openingHours','mustTry','vibe','highlights','dressCode','ageRange','phone','videoUrl','offerExpiry'].forEach(f => {
+    const el = document.getElementById('f-'+f);
+    if (el) data[f] = el.value;
+  });
+
+  try {
+    if (id) {
+      await db.collection(sec).doc(id).update(data);
+      showToast('Updated successfully', 'success');
+      addAudit(`Updated "${data.name}" in ${sec}`);
+    } else {
+      // Get count for order
+      const snap = await db.collection(sec).get();
+      data.order = snap.size;
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection(sec).add(data);
+      showToast('Added successfully', 'success');
+      addAudit(`Added "${data.name}" to ${sec}`);
+    }
+    closeModal();
+    loadSectionItems(sec);
+    refreshStats();
+  } catch(e) {
+    showToast('Error saving: '+e.message, 'error');
+  }
+}
+
+function v(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+
+// ═══════════════════════════════════════════
+// DELETE
+// ═══════════════════════════════════════════
+async function deleteItem(sec, id, name) {
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  try {
+    await db.collection(sec).doc(id).delete();
+    showToast('Deleted', 'success');
+    addAudit(`Deleted "${name}" from ${sec}`);
+    loadSectionItems(sec);
+    refreshStats();
+  } catch(e) {
+    showToast('Error: '+e.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════
+// EXPORT JSON
+// ═══════════════════════════════════════════
+async function exportSection(sec) {
+  const snap = await db.collection(sec).get();
+  const items = [];
+  snap.forEach(doc => items.push({id:doc.id,...doc.data()}));
+  const blob = new Blob([JSON.stringify({items},null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = sec+'.json';
+  a.click();
+  showToast('Exported '+sec+'.json', 'success');
+}
+
+// ═══════════════════════════════════════════
+// IMAGE UPLOAD — CLOUDINARY
+// ═══════════════════════════════════════════
+async function uploadImg(input, slot) {
+  const file = input.files[0];
+  if (!file) return;
+  const bar = document.getElementById('bar-'+slot);
+  const drop = document.getElementById('img-drop-'+slot);
+  if (bar) bar.style.width = '30%';
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLOUD.preset);
+
+  try {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD.name}/image/upload`, {method:'POST',body:fd});
+    const json = await res.json();
+    if (bar) bar.style.width = '100%';
+    setTimeout(() => { if(bar) bar.style.width = '0%'; }, 600);
+
+    if (json.secure_url) {
+      const url = json.secure_url;
+      // Update preview
+      if (drop) drop.innerHTML = `<img class="img-preview" src="${url}" id="img-preview-${slot}"/>`;
+      const inp = document.getElementById('f-image');
+      if (inp && slot === 'main') inp.value = url;
+      // Update card preview
+      const prev = document.getElementById('card-prev-img');
+      if (prev && slot === 'main') prev.src = url;
+      showToast('Image uploaded', 'success');
+    } else {
+      showToast('Upload failed. Try pasting URL instead.', 'error');
+    }
+  } catch(e) {
+    showToast('Upload error', 'error');
+  }
+}
+
+async function uploadGallery(input) {
+  const files = [...input.files];
+  for (const file of files) {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUD.preset);
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD.name}/image/upload`, {method:'POST',body:fd});
+      const json = await res.json();
+      if (json.secure_url) {
+        window._gallery = window._gallery || [];
+        window._gallery.push(json.secure_url);
+        refreshGalleryGrid();
+      }
+    } catch(e) {}
+  }
+  showToast('Gallery updated', 'success');
+}
+
+function refreshGalleryGrid() {
+  const grid = document.getElementById('gallery-grid');
+  if (!grid) return;
+  grid.innerHTML = (window._gallery||[]).map((url,i)=>`
+    <div style="position:relative;border-radius:6px;overflow:hidden;height:70px;">
+      <img src="${url}" style="width:100%;height:100%;object-fit:cover;"/>
+      <button onclick="removeGalleryImg(${i})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);border:none;color:#fff;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:0.6rem;">✕</button>
+    </div>
+  `).join('') + `<div style="border:2px dashed rgba(201,168,76,0.2);border-radius:6px;height:70px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.2rem;color:var(--text3);" onclick="document.getElementById('file-gallery').click()">+</div>`;
+}
+
+function removeGalleryImg(i) {
+  window._gallery.splice(i,1);
+  refreshGalleryGrid();
+}
+
+function handleDrop(e, slot) {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const fakeInput = {files:[file]};
+  uploadImg(fakeInput, slot);
+}
+
+// ═══════════════════════════════════════════
+// IMAGE MANAGER PAGE
+// ═══════════════════════════════════════════
+function renderImgSections() {
+  const list = document.getElementById('img-section-list');
+  if (!list) return;
+  list.innerHTML = IMAGE_SECTIONS.map(s => `
+    <div class="nav-item" onclick="selectImgSection('${s.id}',this)" style="font-size:0.78rem;">
+      <span style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.15);flex-shrink:0;"></span>
+      ${s.label}
+    </div>
+  `).join('');
+}
+
+function selectImgSection(id, el) {
+  document.querySelectorAll('#img-section-list .nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  const sec = IMAGE_SECTIONS.find(s => s.id === id);
+  const area = document.getElementById('img-upload-area');
+  area.innerHTML = `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:1rem;font-weight:600;color:#fff;margin-bottom:4px;">${sec.label}</div>
+      <div class="ratio-badge">${sec.ratio}</div>
+    </div>
+    <div class="img-drop" id="img-drop-mgr" onclick="document.getElementById('file-mgr').click()" ondrop="handleDropMgr(event)" ondragover="event.preventDefault()">
+      <div style="font-size:1.5rem;margin-bottom:8px;">📷</div>
+      <div style="font-size:0.78rem;color:var(--text3);">Drop image or click to upload</div>
+      <div style="font-size:0.66rem;color:var(--text3);margin-top:4px;">Recommended: ${sec.ratio}</div>
+    </div>
+    <div class="upload-bar"><div class="upload-bar-fill" id="bar-mgr" style="width:0%"></div></div>
+    <input type="file" id="file-mgr" accept="image/*" style="display:none" onchange="uploadMgr(this,'${id}')"/>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <input id="mgr-url-input" placeholder="Or paste image URL..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:8px 12px;color:#fff;font-size:0.78rem;outline:none;"/>
+      <button class="btn btn-secondary btn-sm" onclick="useMgrUrl('${id}')">Use URL</button>
+    </div>
+    <div id="mgr-result" style="margin-top:12px;"></div>
+  `;
+}
+
+async function uploadMgr(input, sectionId) {
+  const file = input.files[0];
+  if (!file) return;
+  const bar = document.getElementById('bar-mgr');
+  if (bar) bar.style.width = '40%';
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLOUD.preset);
+  try {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD.name}/image/upload`,{method:'POST',body:fd});
+    const json = await res.json();
+    if (bar) bar.style.width = '100%';
+    if (json.secure_url) showMgrResult(json.secure_url, sectionId);
+    else showToast('Upload failed','error');
+  } catch(e) { showToast('Error','error'); }
+}
+
+function useMgrUrl(sectionId) {
+  const url = document.getElementById('mgr-url-input').value.trim();
+  if (url.startsWith('http')) showMgrResult(url, sectionId);
+}
+
+function handleDropMgr(e) {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  uploadMgr({files:[file]}, currentImgSection||'hero');
+}
+
+function showMgrResult(url, sectionId) {
+  // Save to Firebase
+  db.collection('siteImages').doc(sectionId).set({url, updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  const result = document.getElementById('mgr-result');
+  if (result) result.innerHTML = `
+    <div style="background:rgba(122,201,160,0.07);border:1px solid rgba(122,201,160,0.2);border-radius:8px;padding:12px;">
+      <img src="${url}" style="width:100%;border-radius:6px;max-height:160px;object-fit:cover;margin-bottom:8px;"/>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <code style="flex:1;font-size:0.68rem;color:rgba(255,255,255,0.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${url}</code>
+        <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText('${url}');showToast('URL copied','success')">Copy</button>
+      </div>
+    </div>
+  `;
+  showToast('Image ready', 'success');
+  addAudit(`Uploaded image for ${sectionId}`);
+}
+
+// ═══════════════════════════════════════════
+// AI FILL
+// ═══════════════════════════════════════════
+async function aiFill(sec) {
+  const name = document.getElementById('ai-name-input')?.value.trim();
+  if (!name) { showToast('Enter a name first','error'); return; }
+  const status = document.getElementById('ai-status');
+  if (status) status.textContent = '⏳ AI is filling details...';
+
+  const prompts = {
+    places: `For the London attraction "${name}", return ONLY valid JSON with: {"name":"","area":"","category":"Top Attractions","description":"2 engaging sentences","openingHours":"","entryFee":"","priceType":"Free or Paid","mapsUrl":"https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}+London"}`,
+    food: `For the London restaurant "${name}", return ONLY valid JSON with: {"name":"","area":"","category":"Restaurants","cuisine":"","description":"2 sentences","openingHours":"","priceRange":"","mustTry":"","vibe":"","mapsUrl":"https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}+London"}`,
+    shopping: `For the London shopping spot "${name}", return ONLY valid JSON with: {"name":"","area":"","category":"Shopping Areas","description":"2 sentences","openingHours":"","priceRange":"","highlights":"","mapsUrl":"https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}+London"}`,
+    nightlife: `For the London nightlife venue "${name}", return ONLY valid JSON with: {"name":"","area":"","category":"Bars","description":"2 sentences","openingHours":"","entryFee":"","dressCode":"","mapsUrl":"https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}+London"}`,
+    kids: `For the London family attraction "${name}", return ONLY valid JSON with: {"name":"","area":"","category":"Parks","description":"2 sentences","openingHours":"","entryFee":"","ageRange":"","mapsUrl":"https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}+London"}`,
+    muslim: `For the London Muslim venue "${name}", return ONLY valid JSON with: {"name":"","area":"","category":"Mosques","description":"2 sentences","openingHours":"","entryFee":"","mapsUrl":"https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}+London"}`,
+    emergency: `For the London emergency service "${name}", return ONLY valid JSON with: {"name":"","area":"","category":"Hospitals","description":"2 sentences","phone":"","address":"","mapsUrl":"https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}+London"}`,
+  };
+
+  try {
+    // Use Gemini via a simple fetch (using the NOVA endpoint pattern)
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyAUCSRPu1PZvDMyw9AHavW8Tr-xW_XR8oE', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({contents:[{parts:[{text: prompts[sec] || prompts.places}]}]})
+    });
+    const json = await res.json();
+    const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const clean = text.replace(/```json|```/g,'').trim();
+    const data = JSON.parse(clean);
+
+    // Fill form fields
+    Object.entries(data).forEach(([k,val]) => {
+      const el = document.getElementById('f-'+k);
+      if (el) { el.tagName === 'SELECT' ? el.value = val : el.value = val; }
+    });
+    // Update card preview
+    const prevName = document.getElementById('prev-name');
+    const prevArea = document.getElementById('prev-area');
+    if (prevName) prevName.textContent = data.name || name;
+    if (prevArea) prevArea.textContent = data.area || '';
+
+    if (status) status.textContent = '✓ Filled! Review and save.';
+    showToast('AI filled all details', 'success');
+  } catch(e) {
+    if (status) status.textContent = '✗ AI fill failed. Fill manually.';
+    showToast('AI fill failed','error');
+  }
+}
+
+// ═══════════════════════════════════════════
+// MULTILANGUAGE
+// ═══════════════════════════════════════════
+async function switchLang(sec, id, lang, el) {
+  document.querySelectorAll('.lang-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentLang = lang;
+  if (lang === 'English' || !id) return;
+  // Load translation from Firebase
+  try {
+    const doc = await db.collection(sec).doc(id).collection('translations').doc(lang).get();
+    if (doc.exists) {
+      const data = doc.data();
+      ['name','description'].forEach(f => {
+        const el = document.getElementById('f-'+f);
+        if (el && data[f]) el.value = data[f];
+      });
+      showToast('Loaded '+lang+' translation', 'success');
+    } else {
+      showToast('No '+lang+' translation yet. Edit and save to create one.', 'success');
+    }
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════
+// POPUP EDITOR
+// ═══════════════════════════════════════════
+function switchPopupTab(tab, el) {
+  document.querySelectorAll('#page-popups .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentPopupTab = tab;
+  renderPopupEditor(tab);
+}
+
+async function renderPopupEditor(tab) {
+  const editor = document.getElementById('popup-editor');
+  if (!editor) return;
+  // Load existing config
+  let cfg = {};
+  try {
+    const doc = await db.collection('popups').doc(tab).get();
+    if (doc.exists) cfg = doc.data();
+  } catch(e) {}
+
+  editor.innerHTML = `
+    <div class="form-grid">
+      <div>
+        <div class="field">
+          <div class="toggle-wrap" style="margin-bottom:16px;">
+            <div class="toggle ${cfg.enabled?'on':''}" id="popup-enabled" onclick="toggleEl('popup-enabled')"></div>
+            <span class="toggle-label" style="font-size:0.86rem;color:#fff;">Popup ${tab === 'global' ? 'on all pages' : 'on '+tab+' section'}</span>
+          </div>
+        </div>
+        <div class="field"><label>Title</label><input id="popup-title" value="${cfg.title||''}" placeholder="e.g. Weekend Special Offer"/></div>
+        <div class="field"><label>Subtitle / Badge</label><input id="popup-subtitle" value="${cfg.subtitle||''}" placeholder="e.g. 🎉 This Weekend Only"/></div>
+        <div class="field"><label>Message</label><textarea id="popup-body" style="min-height:80px;">${cfg.body||''}</textarea></div>
+        <div class="form-grid">
+          <div class="field"><label>Button Text</label><input id="popup-cta" value="${cfg.ctaLabel||'Explore Now'}" /></div>
+          <div class="field"><label>Button Link</label><input id="popup-url" value="${cfg.ctaUrl||'/places'}" /></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>Delay (seconds)</label><input type="number" id="popup-delay" value="${cfg.delaySeconds||3}" min="0" max="30"/></div>
+          <div class="field"><label>Expires At</label><input type="datetime-local" id="popup-expiry" value="${cfg.expiresAt||''}"/></div>
+        </div>
+        <div class="toggle-wrap" style="margin-bottom:16px;">
+          <div class="toggle ${cfg.showOnce?'on':''}" id="popup-once" onclick="toggleEl('popup-once')"></div>
+          <span class="toggle-label">Show only once per visitor</span>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-primary" onclick="savePopup('${tab}')">Save Popup</button>
+          <button class="btn btn-secondary" onclick="previewPopup()">Preview</button>
+        </div>
+      </div>
+      <div>
+        <div class="field">
+          <label>Popup Image (optional) <span class="ratio-badge">4:3</span></label>
+          <div class="img-drop" onclick="document.getElementById('file-popup').click()" ondrop="handleDropPopup(event)" ondragover="event.preventDefault()">
+            ${cfg.image ? `<img class="img-preview" src="${cfg.image}" id="popup-img-preview"/>` : `<div style="font-size:1.5rem;margin-bottom:6px;">🖼️</div><div style="font-size:0.76rem;color:var(--text3);">Upload offer image</div>`}
+          </div>
+          <input type="file" id="file-popup" accept="image/*" style="display:none" onchange="uploadPopupImg(this)"/>
+          <input id="popup-img-url" value="${cfg.image||''}" placeholder="Or paste image URL..." style="width:100%;margin-top:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:7px 10px;color:#fff;font-size:0.74rem;outline:none;"/>
+        </div>
+        <!-- LIVE PREVIEW -->
+        <div class="field">
+          <label>Live Preview</label>
+          <div class="popup-preview">
+            ${cfg.image ? `<img src="${cfg.image}" style="width:100%;border-radius:8px;margin-bottom:10px;max-height:120px;object-fit:cover;"/>` : ''}
+            <div style="display:inline-block;background:rgba(201,168,76,0.15);color:var(--gold);border-radius:20px;padding:3px 12px;font-size:0.68rem;font-weight:700;margin-bottom:8px;">${cfg.subtitle||'🎉 Special Offer'}</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:700;color:#fff;margin-bottom:8px;">${cfg.title||'Welcome to TAP LONDON'}</div>
+            <div style="font-size:0.78rem;color:rgba(255,255,255,0.55);margin-bottom:14px;line-height:1.5;">${cfg.body||'Discover the best of London.'}</div>
+            <button style="background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);border:none;border-radius:6px;padding:9px 18px;font-weight:700;font-size:0.8rem;cursor:pointer;width:100%;">${cfg.ctaLabel||'Explore Now'}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function savePopup(tab) {
+  const data = {
+    enabled: document.getElementById('popup-enabled')?.classList.contains('on'),
+    title: document.getElementById('popup-title')?.value || '',
+    subtitle: document.getElementById('popup-subtitle')?.value || '',
+    body: document.getElementById('popup-body')?.value || '',
+    ctaLabel: document.getElementById('popup-cta')?.value || 'Explore Now',
+    ctaUrl: document.getElementById('popup-url')?.value || '/places',
+    delaySeconds: parseInt(document.getElementById('popup-delay')?.value || '3'),
+    expiresAt: document.getElementById('popup-expiry')?.value || '',
+    showOnce: document.getElementById('popup-once')?.classList.contains('on'),
+    image: document.getElementById('popup-img-url')?.value || '',
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+  await db.collection('popups').doc(tab).set(data);
+  showToast('Popup saved', 'success');
+  addAudit(`Updated ${tab} popup`);
+}
+
+async function uploadPopupImg(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLOUD.preset);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD.name}/image/upload`,{method:'POST',body:fd});
+  const json = await res.json();
+  if (json.secure_url) {
+    document.getElementById('popup-img-url').value = json.secure_url;
+    const prev = document.getElementById('popup-img-preview');
+    if (prev) prev.src = json.secure_url;
+    showToast('Image uploaded','success');
+  }
+}
+
+function handleDropPopup(e) {
+  e.preventDefault();
+  uploadPopupImg({files:[e.dataTransfer.files[0]]});
+}
+
+function previewPopup() {
+  const title = document.getElementById('popup-title')?.value || '';
+  const body = document.getElementById('popup-body')?.value || '';
+  const cta = document.getElementById('popup-cta')?.value || 'Explore';
+  const img = document.getElementById('popup-img-url')?.value || '';
+  const sub = document.getElementById('popup-subtitle')?.value || '';
+  // Show modal preview
+  document.getElementById('modal-body').innerHTML = `
+    <h2 style="margin-bottom:16px;">Popup Preview</h2>
+    <div class="popup-preview" style="max-width:100%;">
+      ${img ? `<img src="${img}" style="width:100%;border-radius:10px;margin-bottom:14px;max-height:200px;object-fit:cover;"/>` : ''}
+      <div style="display:inline-block;background:rgba(201,168,76,0.15);color:var(--gold);border-radius:20px;padding:4px 14px;font-size:0.72rem;font-weight:700;margin-bottom:10px;">${sub}</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:10px;">${title}</div>
+      <div style="font-size:0.86rem;color:rgba(255,255,255,0.55);margin-bottom:20px;line-height:1.6;">${body}</div>
+      <button style="background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);border:none;border-radius:8px;padding:12px;font-weight:700;font-size:0.9rem;width:100%;cursor:pointer;">${cta}</button>
+    </div>
+  `;
+  document.getElementById('modal').classList.add('open');
+}
+
+// ═══════════════════════════════════════════
+// NOVA AI SETTINGS
+// ═══════════════════════════════════════════
+async function loadNovaSettings() {
+  try {
+    const doc = await db.collection('settings').doc('nova').get();
+    if (doc.exists) {
+      const d = doc.data();
+      if(d.name) document.getElementById('nova-name').value = d.name;
+      if(d.welcome) document.getElementById('nova-welcome').value = d.welcome;
+      if(d.tone) document.getElementById('nova-tone').value = d.tone;
+      if(d.prompt) document.getElementById('nova-prompt').value = d.prompt;
+      if(d.suggestions) document.getElementById('nova-suggestions').value = d.suggestions;
+      if(!d.enabled) { const t = document.getElementById('nova-toggle'); if(t) t.classList.remove('on'); }
+    }
+  } catch(e) {}
+}
+
+async function saveNova() {
+  const data = {
+    name: document.getElementById('nova-name')?.value || 'NOVA',
+    welcome: document.getElementById('nova-welcome')?.value || '',
+    tone: document.getElementById('nova-tone')?.value || '',
+    prompt: document.getElementById('nova-prompt')?.value || '',
+    suggestions: document.getElementById('nova-suggestions')?.value || '',
+    enabled: document.getElementById('nova-toggle')?.classList.contains('on'),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+  await db.collection('settings').doc('nova').set(data);
+  showToast('NOVA settings saved', 'success');
+  addAudit('Updated NOVA AI settings');
+}
+
+// ═══════════════════════════════════════════
+// AUDIT LOG
+// ═══════════════════════════════════════════
+async function addAudit(msg) {
+  const entry = { msg, user: currentUser?.email || 'admin', time: new Date().toISOString() };
+  try {
+    await db.collection('auditLog').add({ ...entry, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+  } catch(e) {}
+  auditLog.unshift(entry);
+  renderRecentLog();
+}
+
+async function loadAuditLog() {
+  try {
+    const snap = await db.collection('auditLog').orderBy('timestamp','desc').limit(50).get();
+    auditLog = [];
+    snap.forEach(doc => auditLog.push(doc.data()));
+    renderRecentLog();
+    renderFullAuditLog();
+  } catch(e) {}
+}
+
+function renderRecentLog() {
+  const el = document.getElementById('recent-log');
+  if (!el) return;
+  const recent = auditLog.slice(0,5);
+  if (!recent.length) { el.innerHTML = '<div style="font-size:0.78rem;color:var(--text3);text-align:center;padding:20px;">No recent activity</div>'; return; }
+  el.innerHTML = recent.map(l => `
+    <div class="log-item">
+      <div class="log-dot"></div>
+      <div>
+        <div class="log-text">${l.msg}</div>
+        <div class="log-time">${l.user} · ${formatTime(l.time)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderFullAuditLog() {
+  const el = document.getElementById('audit-log-list');
+  if (!el) return;
+  if (!auditLog.length) { el.innerHTML = '<div style="font-size:0.78rem;color:var(--text3);text-align:center;padding:24px;">No activity yet</div>'; return; }
+  el.innerHTML = auditLog.map(l => `
+    <div class="log-item">
+      <div class="log-dot"></div>
+      <div style="flex:1;">
+        <div class="log-text">${l.msg}</div>
+        <div class="log-time">${l.user} · ${formatTime(l.time)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function clearAudit() {
+  if (!confirm('Clear all audit logs?')) return;
+  const snap = await db.collection('auditLog').get();
+  const batch = db.batch();
+  snap.forEach(doc => batch.delete(doc.ref));
+  await batch.commit();
+  auditLog = [];
+  renderFullAuditLog();
+  renderRecentLog();
+  showToast('Audit log cleared','success');
+}
+
+function formatTime(iso) {
+  if (!iso) return '';
+  try { return new Date(iso).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); } catch(e) { return iso; }
+}
+
+// ═══════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════
+async function updatePassword() {
+  const pw = document.getElementById('settings-pw')?.value;
+  if (!pw || pw.length < 6) { showToast('Password must be 6+ characters','error'); return; }
+  try {
+    await auth.currentUser.updatePassword(pw);
+    document.getElementById('settings-pw').value = '';
+    showToast('Password updated','success');
+    addAudit('Changed admin password');
+  } catch(e) {
+    showToast('Error: '+e.message,'error');
+  }
+}
+
+async function addTeamMember() {
+  const email = document.getElementById('new-member-email')?.value.trim();
+  if (!email) return;
+  await db.collection('team').add({ email, role:'editor', addedAt:firebase.firestore.FieldValue.serverTimestamp() });
+  document.getElementById('new-member-email').value = '';
+  showToast('Team member added','success');
+  addAudit('Added team member: '+email);
+}
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function toggleEl(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('on');
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = (type==='success'?'✓ ':'✗ ') + msg;
+  t.className = 'toast show '+type;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function openAddModal(sec) {
+  currentSection = sec;
+  if (!SECTIONS[sec]) return;
+  openItemModal(sec, null);
+}
+</script>
+</body>
+</html>
