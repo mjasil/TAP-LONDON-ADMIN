@@ -9,33 +9,37 @@
 // IMPORT JSON DATA TO FIREBASE
 // ═══════════════════════════════════════════
 async function importAllJSON() {
-  if (!confirm('This will import all your existing JSON data from TAP LONDON into Firebase.\n\nExisting Firebase data will be kept. Continue?')) return;
+  if (!confirm('This will import all your existing JSON data from GitHub into Firebase.\n\nContinue?')) return;
 
+  // Read directly from GitHub raw — always public
+  const GITHUB_RAW = 'https://raw.githubusercontent.com/rakkan1l/TAP-LONDON/main/data';
   const sections = ['places','food','shopping','nightlife','kids','muslim','emergency'];
-  const baseUrl = 'https://tap-london-kgmq.vercel.app';
 
-  showToast('Starting import...', 'success');
-
+  showToast('Starting import from GitHub...', 'success');
   let totalImported = 0;
 
   for (const sec of sections) {
     try {
-      const res = await fetch(baseUrl + '/data/' + sec + '.json');
+      const res = await fetch(GITHUB_RAW + '/' + sec + '.json');
       if (!res.ok) {
-        showToast('Skipped ' + sec + ' (no JSON found)', 'error');
+        showToast('Skipped ' + sec + ' — file not found on GitHub', 'error');
         continue;
       }
       const data = await res.json();
-      const items = data.items || [];
-      if (!items.length) continue;
+      const items = data.items || data || [];
+      if (!items.length) {
+        showToast('Skipped ' + sec + ' — empty', 'error');
+        continue;
+      }
 
-      // Write in batches of 500
+      // Write to Firebase in batches
       let batch = db.batch();
       let count = 0;
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        const id = item.id || item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const ref = db.collection(sec).doc(id);
+        const id = (item.id || item.name || i.toString())
+          .toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const ref = db.collection(sec).doc(id || 'item-' + i);
         batch.set(ref, { ...item, order: i }, { merge: true });
         count++;
         if (count === 499) {
@@ -47,17 +51,18 @@ async function importAllJSON() {
       if (count > 0) await batch.commit();
 
       totalImported += items.length;
-      showToast('✓ ' + sec + ': ' + items.length + ' items imported', 'success');
-      // Update stat
       const el = document.getElementById('stat-' + sec);
       if (el) el.textContent = items.length;
+      showToast('✓ ' + sec + ': ' + items.length + ' items', 'success');
+
     } catch(e) {
-      showToast('Error importing ' + sec + ': ' + e.message, 'error');
+      showToast('Error on ' + sec + ': ' + e.message, 'error');
+      console.error(sec, e);
     }
   }
 
-  await addAudit('Imported ' + totalImported + ' total items from JSON to Firebase');
-  showToast('Import complete! ' + totalImported + ' items total.', 'success');
+  await addAudit('Imported ' + totalImported + ' items from GitHub to Firebase');
+  showToast('Done! ' + totalImported + ' total items in Firebase.', 'success');
   refreshStats();
 }
 
@@ -67,33 +72,37 @@ async function importAllJSON() {
 // IMPORT JSON DATA TO FIREBASE
 // ═══════════════════════════════════════════
 async function importAllJSON() {
-  if (!confirm('This will import all your existing JSON data from TAP LONDON into Firebase.\n\nExisting Firebase data will be kept. Continue?')) return;
+  if (!confirm('This will import all your existing JSON data from GitHub into Firebase.\n\nContinue?')) return;
 
+  // Read directly from GitHub raw — always public
+  const GITHUB_RAW = 'https://raw.githubusercontent.com/rakkan1l/TAP-LONDON/main/data';
   const sections = ['places','food','shopping','nightlife','kids','muslim','emergency'];
-  const baseUrl = 'https://tap-london-kgmq.vercel.app';
 
-  showToast('Starting import...', 'success');
-
+  showToast('Starting import from GitHub...', 'success');
   let totalImported = 0;
 
   for (const sec of sections) {
     try {
-      const res = await fetch(baseUrl + '/data/' + sec + '.json');
+      const res = await fetch(GITHUB_RAW + '/' + sec + '.json');
       if (!res.ok) {
-        showToast('Skipped ' + sec + ' (no JSON found)', 'error');
+        showToast('Skipped ' + sec + ' — file not found on GitHub', 'error');
         continue;
       }
       const data = await res.json();
-      const items = data.items || [];
-      if (!items.length) continue;
+      const items = data.items || data || [];
+      if (!items.length) {
+        showToast('Skipped ' + sec + ' — empty', 'error');
+        continue;
+      }
 
-      // Write in batches of 500
+      // Write to Firebase in batches
       let batch = db.batch();
       let count = 0;
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        const id = item.id || item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const ref = db.collection(sec).doc(id);
+        const id = (item.id || item.name || i.toString())
+          .toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const ref = db.collection(sec).doc(id || 'item-' + i);
         batch.set(ref, { ...item, order: i }, { merge: true });
         count++;
         if (count === 499) {
@@ -105,17 +114,18 @@ async function importAllJSON() {
       if (count > 0) await batch.commit();
 
       totalImported += items.length;
-      showToast('✓ ' + sec + ': ' + items.length + ' items imported', 'success');
-      // Update stat
       const el = document.getElementById('stat-' + sec);
       if (el) el.textContent = items.length;
+      showToast('✓ ' + sec + ': ' + items.length + ' items', 'success');
+
     } catch(e) {
-      showToast('Error importing ' + sec + ': ' + e.message, 'error');
+      showToast('Error on ' + sec + ': ' + e.message, 'error');
+      console.error(sec, e);
     }
   }
 
-  await addAudit('Imported ' + totalImported + ' total items from JSON to Firebase');
-  showToast('Import complete! ' + totalImported + ' items total.', 'success');
+  await addAudit('Imported ' + totalImported + ' items from GitHub to Firebase');
+  showToast('Done! ' + totalImported + ' total items in Firebase.', 'success');
   refreshStats();
 }
 
@@ -125,33 +135,37 @@ async function importAllJSON() {
 // IMPORT JSON DATA TO FIREBASE
 // ═══════════════════════════════════════════
 async function importAllJSON() {
-  if (!confirm('This will import all your existing JSON data from TAP LONDON into Firebase.\n\nExisting Firebase data will be kept. Continue?')) return;
+  if (!confirm('This will import all your existing JSON data from GitHub into Firebase.\n\nContinue?')) return;
 
+  // Read directly from GitHub raw — always public
+  const GITHUB_RAW = 'https://raw.githubusercontent.com/rakkan1l/TAP-LONDON/main/data';
   const sections = ['places','food','shopping','nightlife','kids','muslim','emergency'];
-  const baseUrl = 'https://tap-london-kgmq.vercel.app';
 
-  showToast('Starting import...', 'success');
-
+  showToast('Starting import from GitHub...', 'success');
   let totalImported = 0;
 
   for (const sec of sections) {
     try {
-      const res = await fetch(baseUrl + '/data/' + sec + '.json');
+      const res = await fetch(GITHUB_RAW + '/' + sec + '.json');
       if (!res.ok) {
-        showToast('Skipped ' + sec + ' (no JSON found)', 'error');
+        showToast('Skipped ' + sec + ' — file not found on GitHub', 'error');
         continue;
       }
       const data = await res.json();
-      const items = data.items || [];
-      if (!items.length) continue;
+      const items = data.items || data || [];
+      if (!items.length) {
+        showToast('Skipped ' + sec + ' — empty', 'error');
+        continue;
+      }
 
-      // Write in batches of 500
+      // Write to Firebase in batches
       let batch = db.batch();
       let count = 0;
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        const id = item.id || item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const ref = db.collection(sec).doc(id);
+        const id = (item.id || item.name || i.toString())
+          .toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const ref = db.collection(sec).doc(id || 'item-' + i);
         batch.set(ref, { ...item, order: i }, { merge: true });
         count++;
         if (count === 499) {
@@ -163,17 +177,18 @@ async function importAllJSON() {
       if (count > 0) await batch.commit();
 
       totalImported += items.length;
-      showToast('✓ ' + sec + ': ' + items.length + ' items imported', 'success');
-      // Update stat
       const el = document.getElementById('stat-' + sec);
       if (el) el.textContent = items.length;
+      showToast('✓ ' + sec + ': ' + items.length + ' items', 'success');
+
     } catch(e) {
-      showToast('Error importing ' + sec + ': ' + e.message, 'error');
+      showToast('Error on ' + sec + ': ' + e.message, 'error');
+      console.error(sec, e);
     }
   }
 
-  await addAudit('Imported ' + totalImported + ' total items from JSON to Firebase');
-  showToast('Import complete! ' + totalImported + ' items total.', 'success');
+  await addAudit('Imported ' + totalImported + ' items from GitHub to Firebase');
+  showToast('Done! ' + totalImported + ' total items in Firebase.', 'success');
   refreshStats();
 }
 
@@ -1601,33 +1616,37 @@ function openAddModal(sec) {
 // IMPORT JSON DATA TO FIREBASE
 // ═══════════════════════════════════════════
 async function importAllJSON() {
-  if (!confirm('This will import all your existing JSON data from TAP LONDON into Firebase.\n\nExisting Firebase data will be kept. Continue?')) return;
+  if (!confirm('This will import all your existing JSON data from GitHub into Firebase.\n\nContinue?')) return;
 
+  // Read directly from GitHub raw — always public
+  const GITHUB_RAW = 'https://raw.githubusercontent.com/rakkan1l/TAP-LONDON/main/data';
   const sections = ['places','food','shopping','nightlife','kids','muslim','emergency'];
-  const baseUrl = 'https://tap-london-kgmq.vercel.app';
 
-  showToast('Starting import...', 'success');
-
+  showToast('Starting import from GitHub...', 'success');
   let totalImported = 0;
 
   for (const sec of sections) {
     try {
-      const res = await fetch(baseUrl + '/data/' + sec + '.json');
+      const res = await fetch(GITHUB_RAW + '/' + sec + '.json');
       if (!res.ok) {
-        showToast('Skipped ' + sec + ' (no JSON found)', 'error');
+        showToast('Skipped ' + sec + ' — file not found on GitHub', 'error');
         continue;
       }
       const data = await res.json();
-      const items = data.items || [];
-      if (!items.length) continue;
+      const items = data.items || data || [];
+      if (!items.length) {
+        showToast('Skipped ' + sec + ' — empty', 'error');
+        continue;
+      }
 
-      // Write in batches of 500
+      // Write to Firebase in batches
       let batch = db.batch();
       let count = 0;
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        const id = item.id || item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const ref = db.collection(sec).doc(id);
+        const id = (item.id || item.name || i.toString())
+          .toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const ref = db.collection(sec).doc(id || 'item-' + i);
         batch.set(ref, { ...item, order: i }, { merge: true });
         count++;
         if (count === 499) {
@@ -1639,17 +1658,18 @@ async function importAllJSON() {
       if (count > 0) await batch.commit();
 
       totalImported += items.length;
-      showToast('✓ ' + sec + ': ' + items.length + ' items imported', 'success');
-      // Update stat
       const el = document.getElementById('stat-' + sec);
       if (el) el.textContent = items.length;
+      showToast('✓ ' + sec + ': ' + items.length + ' items', 'success');
+
     } catch(e) {
-      showToast('Error importing ' + sec + ': ' + e.message, 'error');
+      showToast('Error on ' + sec + ': ' + e.message, 'error');
+      console.error(sec, e);
     }
   }
 
-  await addAudit('Imported ' + totalImported + ' total items from JSON to Firebase');
-  showToast('Import complete! ' + totalImported + ' items total.', 'success');
+  await addAudit('Imported ' + totalImported + ' items from GitHub to Firebase');
+  showToast('Done! ' + totalImported + ' total items in Firebase.', 'success');
   refreshStats();
 }
 
