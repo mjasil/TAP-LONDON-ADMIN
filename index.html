@@ -4,9 +4,180 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>TAP LONDON — Admin</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js">
+// ═══════════════════════════════════════════
+// IMPORT JSON DATA TO FIREBASE
+// ═══════════════════════════════════════════
+async function importAllJSON() {
+  if (!confirm('This will import all your existing JSON data from TAP LONDON into Firebase.\n\nExisting Firebase data will be kept. Continue?')) return;
+
+  const sections = ['places','food','shopping','nightlife','kids','muslim','emergency'];
+  const baseUrl = 'https://tap-london-kgmq.vercel.app';
+
+  showToast('Starting import...', 'success');
+
+  let totalImported = 0;
+
+  for (const sec of sections) {
+    try {
+      const res = await fetch(baseUrl + '/data/' + sec + '.json');
+      if (!res.ok) {
+        showToast('Skipped ' + sec + ' (no JSON found)', 'error');
+        continue;
+      }
+      const data = await res.json();
+      const items = data.items || [];
+      if (!items.length) continue;
+
+      // Write in batches of 500
+      let batch = db.batch();
+      let count = 0;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const id = item.id || item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const ref = db.collection(sec).doc(id);
+        batch.set(ref, { ...item, order: i }, { merge: true });
+        count++;
+        if (count === 499) {
+          await batch.commit();
+          batch = db.batch();
+          count = 0;
+        }
+      }
+      if (count > 0) await batch.commit();
+
+      totalImported += items.length;
+      showToast('✓ ' + sec + ': ' + items.length + ' items imported', 'success');
+      // Update stat
+      const el = document.getElementById('stat-' + sec);
+      if (el) el.textContent = items.length;
+    } catch(e) {
+      showToast('Error importing ' + sec + ': ' + e.message, 'error');
+    }
+  }
+
+  await addAudit('Imported ' + totalImported + ' total items from JSON to Firebase');
+  showToast('Import complete! ' + totalImported + ' items total.', 'success');
+  refreshStats();
+}
+
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js">
+// ═══════════════════════════════════════════
+// IMPORT JSON DATA TO FIREBASE
+// ═══════════════════════════════════════════
+async function importAllJSON() {
+  if (!confirm('This will import all your existing JSON data from TAP LONDON into Firebase.\n\nExisting Firebase data will be kept. Continue?')) return;
+
+  const sections = ['places','food','shopping','nightlife','kids','muslim','emergency'];
+  const baseUrl = 'https://tap-london-kgmq.vercel.app';
+
+  showToast('Starting import...', 'success');
+
+  let totalImported = 0;
+
+  for (const sec of sections) {
+    try {
+      const res = await fetch(baseUrl + '/data/' + sec + '.json');
+      if (!res.ok) {
+        showToast('Skipped ' + sec + ' (no JSON found)', 'error');
+        continue;
+      }
+      const data = await res.json();
+      const items = data.items || [];
+      if (!items.length) continue;
+
+      // Write in batches of 500
+      let batch = db.batch();
+      let count = 0;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const id = item.id || item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const ref = db.collection(sec).doc(id);
+        batch.set(ref, { ...item, order: i }, { merge: true });
+        count++;
+        if (count === 499) {
+          await batch.commit();
+          batch = db.batch();
+          count = 0;
+        }
+      }
+      if (count > 0) await batch.commit();
+
+      totalImported += items.length;
+      showToast('✓ ' + sec + ': ' + items.length + ' items imported', 'success');
+      // Update stat
+      const el = document.getElementById('stat-' + sec);
+      if (el) el.textContent = items.length;
+    } catch(e) {
+      showToast('Error importing ' + sec + ': ' + e.message, 'error');
+    }
+  }
+
+  await addAudit('Imported ' + totalImported + ' total items from JSON to Firebase');
+  showToast('Import complete! ' + totalImported + ' items total.', 'success');
+  refreshStats();
+}
+
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js">
+// ═══════════════════════════════════════════
+// IMPORT JSON DATA TO FIREBASE
+// ═══════════════════════════════════════════
+async function importAllJSON() {
+  if (!confirm('This will import all your existing JSON data from TAP LONDON into Firebase.\n\nExisting Firebase data will be kept. Continue?')) return;
+
+  const sections = ['places','food','shopping','nightlife','kids','muslim','emergency'];
+  const baseUrl = 'https://tap-london-kgmq.vercel.app';
+
+  showToast('Starting import...', 'success');
+
+  let totalImported = 0;
+
+  for (const sec of sections) {
+    try {
+      const res = await fetch(baseUrl + '/data/' + sec + '.json');
+      if (!res.ok) {
+        showToast('Skipped ' + sec + ' (no JSON found)', 'error');
+        continue;
+      }
+      const data = await res.json();
+      const items = data.items || [];
+      if (!items.length) continue;
+
+      // Write in batches of 500
+      let batch = db.batch();
+      let count = 0;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const id = item.id || item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const ref = db.collection(sec).doc(id);
+        batch.set(ref, { ...item, order: i }, { merge: true });
+        count++;
+        if (count === 499) {
+          await batch.commit();
+          batch = db.batch();
+          count = 0;
+        }
+      }
+      if (count > 0) await batch.commit();
+
+      totalImported += items.length;
+      showToast('✓ ' + sec + ': ' + items.length + ' items imported', 'success');
+      // Update stat
+      const el = document.getElementById('stat-' + sec);
+      if (el) el.textContent = items.length;
+    } catch(e) {
+      showToast('Error importing ' + sec + ': ' + e.message, 'error');
+    }
+  }
+
+  await addAudit('Imported ' + totalImported + ' total items from JSON to Firebase');
+  showToast('Import complete! ' + totalImported + ' items total.', 'success');
+  refreshStats();
+}
+
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -308,6 +479,7 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;}
               <button class="btn btn-secondary btn-sm" onclick="showPage('nightlife');openAddModal('nightlife')">+ Add Nightlife</button>
               <button class="btn btn-secondary btn-sm" onclick="showPage('popups')">Set Popup</button>
               <button class="btn btn-secondary btn-sm" onclick="showPage('images')">Upload Image</button>
+              <button class="btn btn-secondary btn-sm" onclick="importAllJSON()" style="background:rgba(201,168,76,0.15);color:#c9a84c;border:1px solid rgba(201,168,76,0.3);">⬆ Import JSON → Firebase</button>
             </div>
           </div>
           <div class="card">
@@ -1424,6 +1596,63 @@ function openAddModal(sec) {
   if (!SECTIONS[sec]) return;
   openItemModal(sec, null);
 }
+
+// ═══════════════════════════════════════════
+// IMPORT JSON DATA TO FIREBASE
+// ═══════════════════════════════════════════
+async function importAllJSON() {
+  if (!confirm('This will import all your existing JSON data from TAP LONDON into Firebase.\n\nExisting Firebase data will be kept. Continue?')) return;
+
+  const sections = ['places','food','shopping','nightlife','kids','muslim','emergency'];
+  const baseUrl = 'https://tap-london-kgmq.vercel.app';
+
+  showToast('Starting import...', 'success');
+
+  let totalImported = 0;
+
+  for (const sec of sections) {
+    try {
+      const res = await fetch(baseUrl + '/data/' + sec + '.json');
+      if (!res.ok) {
+        showToast('Skipped ' + sec + ' (no JSON found)', 'error');
+        continue;
+      }
+      const data = await res.json();
+      const items = data.items || [];
+      if (!items.length) continue;
+
+      // Write in batches of 500
+      let batch = db.batch();
+      let count = 0;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const id = item.id || item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const ref = db.collection(sec).doc(id);
+        batch.set(ref, { ...item, order: i }, { merge: true });
+        count++;
+        if (count === 499) {
+          await batch.commit();
+          batch = db.batch();
+          count = 0;
+        }
+      }
+      if (count > 0) await batch.commit();
+
+      totalImported += items.length;
+      showToast('✓ ' + sec + ': ' + items.length + ' items imported', 'success');
+      // Update stat
+      const el = document.getElementById('stat-' + sec);
+      if (el) el.textContent = items.length;
+    } catch(e) {
+      showToast('Error importing ' + sec + ': ' + e.message, 'error');
+    }
+  }
+
+  await addAudit('Imported ' + totalImported + ' total items from JSON to Firebase');
+  showToast('Import complete! ' + totalImported + ' items total.', 'success');
+  refreshStats();
+}
+
 </script>
 </body>
 </html>
