@@ -66,6 +66,70 @@ async function importAllJSON() {
   refreshStats();
 }
 
+
+// ═══════════════════════════════════════════
+// HERO IMAGE DASHBOARD
+// ═══════════════════════════════════════════
+async function loadCurrentHero() {
+  try {
+    const snap = await db.collection('siteImages').doc('hero').get();
+    if (snap.exists && snap.data().url) {
+      const img = document.getElementById('hero-current-img');
+      if (img) img.src = snap.data().url;
+      const input = document.getElementById('hero-url-input');
+      if (input) input.value = snap.data().url;
+    }
+  } catch(e) {}
+}
+
+async function uploadHeroDash(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const bar = document.getElementById('bar-hero-dash');
+  if (bar) bar.style.width = '40%';
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLOUD.preset);
+  try {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD.name}/image/upload`, {method:'POST',body:fd});
+    const json = await res.json();
+    if (bar) bar.style.width = '100%';
+    setTimeout(() => { if(bar) bar.style.width='0%'; }, 800);
+    if (json.secure_url) {
+      await saveHeroToFirebase(json.secure_url);
+    } else {
+      showToast('Upload failed', 'error');
+    }
+  } catch(e) {
+    showToast('Upload error', 'error');
+  }
+}
+
+async function saveHeroUrl() {
+  const url = document.getElementById('hero-url-input')?.value.trim();
+  if (!url || !url.startsWith('http')) { showToast('Enter a valid URL', 'error'); return; }
+  await saveHeroToFirebase(url);
+}
+
+async function saveHeroToFirebase(url) {
+  try {
+    await db.collection('siteImages').doc('hero').set({
+      url, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // Update preview
+    const img = document.getElementById('hero-current-img');
+    if (img) img.src = url;
+    const input = document.getElementById('hero-url-input');
+    if (input) input.value = url;
+    const status = document.getElementById('hero-save-status');
+    if (status) { status.textContent = '✓ Hero image updated! Refresh TAP LONDON to see it.'; setTimeout(() => { status.textContent=''; }, 4000); }
+    showToast('Hero image saved!', 'success');
+    addAudit('Updated homepage hero image');
+  } catch(e) {
+    showToast('Error saving: ' + e.message, 'error');
+  }
+}
+
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js">
 // ═══════════════════════════════════════════
@@ -129,6 +193,70 @@ async function importAllJSON() {
   refreshStats();
 }
 
+
+// ═══════════════════════════════════════════
+// HERO IMAGE DASHBOARD
+// ═══════════════════════════════════════════
+async function loadCurrentHero() {
+  try {
+    const snap = await db.collection('siteImages').doc('hero').get();
+    if (snap.exists && snap.data().url) {
+      const img = document.getElementById('hero-current-img');
+      if (img) img.src = snap.data().url;
+      const input = document.getElementById('hero-url-input');
+      if (input) input.value = snap.data().url;
+    }
+  } catch(e) {}
+}
+
+async function uploadHeroDash(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const bar = document.getElementById('bar-hero-dash');
+  if (bar) bar.style.width = '40%';
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLOUD.preset);
+  try {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD.name}/image/upload`, {method:'POST',body:fd});
+    const json = await res.json();
+    if (bar) bar.style.width = '100%';
+    setTimeout(() => { if(bar) bar.style.width='0%'; }, 800);
+    if (json.secure_url) {
+      await saveHeroToFirebase(json.secure_url);
+    } else {
+      showToast('Upload failed', 'error');
+    }
+  } catch(e) {
+    showToast('Upload error', 'error');
+  }
+}
+
+async function saveHeroUrl() {
+  const url = document.getElementById('hero-url-input')?.value.trim();
+  if (!url || !url.startsWith('http')) { showToast('Enter a valid URL', 'error'); return; }
+  await saveHeroToFirebase(url);
+}
+
+async function saveHeroToFirebase(url) {
+  try {
+    await db.collection('siteImages').doc('hero').set({
+      url, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // Update preview
+    const img = document.getElementById('hero-current-img');
+    if (img) img.src = url;
+    const input = document.getElementById('hero-url-input');
+    if (input) input.value = url;
+    const status = document.getElementById('hero-save-status');
+    if (status) { status.textContent = '✓ Hero image updated! Refresh TAP LONDON to see it.'; setTimeout(() => { status.textContent=''; }, 4000); }
+    showToast('Hero image saved!', 'success');
+    addAudit('Updated homepage hero image');
+  } catch(e) {
+    showToast('Error saving: ' + e.message, 'error');
+  }
+}
+
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js">
 // ═══════════════════════════════════════════
@@ -190,6 +318,70 @@ async function importAllJSON() {
   await addAudit('Imported ' + totalImported + ' items from GitHub to Firebase');
   showToast('Done! ' + totalImported + ' total items in Firebase.', 'success');
   refreshStats();
+}
+
+
+// ═══════════════════════════════════════════
+// HERO IMAGE DASHBOARD
+// ═══════════════════════════════════════════
+async function loadCurrentHero() {
+  try {
+    const snap = await db.collection('siteImages').doc('hero').get();
+    if (snap.exists && snap.data().url) {
+      const img = document.getElementById('hero-current-img');
+      if (img) img.src = snap.data().url;
+      const input = document.getElementById('hero-url-input');
+      if (input) input.value = snap.data().url;
+    }
+  } catch(e) {}
+}
+
+async function uploadHeroDash(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const bar = document.getElementById('bar-hero-dash');
+  if (bar) bar.style.width = '40%';
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLOUD.preset);
+  try {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD.name}/image/upload`, {method:'POST',body:fd});
+    const json = await res.json();
+    if (bar) bar.style.width = '100%';
+    setTimeout(() => { if(bar) bar.style.width='0%'; }, 800);
+    if (json.secure_url) {
+      await saveHeroToFirebase(json.secure_url);
+    } else {
+      showToast('Upload failed', 'error');
+    }
+  } catch(e) {
+    showToast('Upload error', 'error');
+  }
+}
+
+async function saveHeroUrl() {
+  const url = document.getElementById('hero-url-input')?.value.trim();
+  if (!url || !url.startsWith('http')) { showToast('Enter a valid URL', 'error'); return; }
+  await saveHeroToFirebase(url);
+}
+
+async function saveHeroToFirebase(url) {
+  try {
+    await db.collection('siteImages').doc('hero').set({
+      url, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // Update preview
+    const img = document.getElementById('hero-current-img');
+    if (img) img.src = url;
+    const input = document.getElementById('hero-url-input');
+    if (input) input.value = url;
+    const status = document.getElementById('hero-save-status');
+    if (status) { status.textContent = '✓ Hero image updated! Refresh TAP LONDON to see it.'; setTimeout(() => { status.textContent=''; }, 4000); }
+    showToast('Hero image saved!', 'success');
+    addAudit('Updated homepage hero image');
+  } catch(e) {
+    showToast('Error saving: ' + e.message, 'error');
+  }
 }
 
 </script>
@@ -486,6 +678,32 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;}
             <div class="stat-card"><div class="stat-num" id="stat-kids">—</div><div class="stat-label">Kids</div></div>
             <div class="stat-card"><div class="stat-num" id="stat-muslim">—</div><div class="stat-label">Muslim Guide</div></div>
           </div>
+          <!-- HERO IMAGE CHANGER -->
+          <div class="card" style="margin-bottom:16px;">
+            <div style="font-size:0.8rem;font-weight:600;color:#fff;margin-bottom:14px;">🖼️ Homepage Hero Image</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+              <div>
+                <div style="font-size:0.68rem;color:var(--text3);margin-bottom:8px;">Current hero image shown on homepage</div>
+                <div id="hero-preview-wrap" style="position:relative;border-radius:10px;overflow:hidden;height:120px;background:#111;margin-bottom:10px;">
+                  <img id="hero-current-img" src="https://images.pexels.com/photos/672532/pexels-photo-672532.jpeg?auto=compress&cs=tinysrgb&w=600" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"/>
+                  <div style="position:absolute;bottom:8px;left:8px;font-size:0.6rem;color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.5);padding:2px 6px;border-radius:4px;">16:9 — 1920×1080px recommended</div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <button class="btn btn-primary btn-sm" onclick="document.getElementById('file-hero-dash').click()">📷 Upload New</button>
+                  <button class="btn btn-secondary btn-sm" onclick="saveHeroUrl()">🔗 Use URL</button>
+                </div>
+                <input type="file" id="file-hero-dash" accept="image/*" style="display:none" onchange="uploadHeroDash(this)"/>
+                <div class="upload-bar" style="margin-top:6px;"><div class="upload-bar-fill" id="bar-hero-dash" style="width:0%"></div></div>
+              </div>
+              <div>
+                <div style="font-size:0.68rem;color:var(--text3);margin-bottom:6px;">Paste image URL</div>
+                <input id="hero-url-input" placeholder="https://images.pexels.com/..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#fff;font-size:0.8rem;outline:none;margin-bottom:8px;box-sizing:border-box;"/>
+                <div style="font-size:0.68rem;color:var(--text3);margin-bottom:10px;">Or use Cloudinary / Pexels / any direct image link</div>
+                <div id="hero-save-status" style="font-size:0.72rem;color:var(--green);"></div>
+              </div>
+            </div>
+          </div>
+
           <div class="card-gold" style="margin-bottom:16px;">
             <div style="font-size:0.74rem;color:var(--gold);font-weight:600;margin-bottom:8px;">⚡ Quick Actions</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -712,6 +930,7 @@ auth.onAuthStateChanged(user => {
     document.getElementById('settings-email').value = user.email;
     refreshStats();
     loadAuditLog();
+    setTimeout(loadCurrentHero, 500);
     loadNovaSettings();
     renderImgSections();
     renderPopupEditor('global');
@@ -1671,6 +1890,70 @@ async function importAllJSON() {
   await addAudit('Imported ' + totalImported + ' items from GitHub to Firebase');
   showToast('Done! ' + totalImported + ' total items in Firebase.', 'success');
   refreshStats();
+}
+
+
+// ═══════════════════════════════════════════
+// HERO IMAGE DASHBOARD
+// ═══════════════════════════════════════════
+async function loadCurrentHero() {
+  try {
+    const snap = await db.collection('siteImages').doc('hero').get();
+    if (snap.exists && snap.data().url) {
+      const img = document.getElementById('hero-current-img');
+      if (img) img.src = snap.data().url;
+      const input = document.getElementById('hero-url-input');
+      if (input) input.value = snap.data().url;
+    }
+  } catch(e) {}
+}
+
+async function uploadHeroDash(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const bar = document.getElementById('bar-hero-dash');
+  if (bar) bar.style.width = '40%';
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLOUD.preset);
+  try {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD.name}/image/upload`, {method:'POST',body:fd});
+    const json = await res.json();
+    if (bar) bar.style.width = '100%';
+    setTimeout(() => { if(bar) bar.style.width='0%'; }, 800);
+    if (json.secure_url) {
+      await saveHeroToFirebase(json.secure_url);
+    } else {
+      showToast('Upload failed', 'error');
+    }
+  } catch(e) {
+    showToast('Upload error', 'error');
+  }
+}
+
+async function saveHeroUrl() {
+  const url = document.getElementById('hero-url-input')?.value.trim();
+  if (!url || !url.startsWith('http')) { showToast('Enter a valid URL', 'error'); return; }
+  await saveHeroToFirebase(url);
+}
+
+async function saveHeroToFirebase(url) {
+  try {
+    await db.collection('siteImages').doc('hero').set({
+      url, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // Update preview
+    const img = document.getElementById('hero-current-img');
+    if (img) img.src = url;
+    const input = document.getElementById('hero-url-input');
+    if (input) input.value = url;
+    const status = document.getElementById('hero-save-status');
+    if (status) { status.textContent = '✓ Hero image updated! Refresh TAP LONDON to see it.'; setTimeout(() => { status.textContent=''; }, 4000); }
+    showToast('Hero image saved!', 'success');
+    addAudit('Updated homepage hero image');
+  } catch(e) {
+    showToast('Error saving: ' + e.message, 'error');
+  }
 }
 
 </script>
