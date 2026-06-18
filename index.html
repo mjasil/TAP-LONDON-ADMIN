@@ -983,7 +983,7 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-async function doLogin() {
+async async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pw = document.getElementById('login-pw').value;
   const err = document.getElementById('login-err');
@@ -1987,4 +1987,4 @@ async function saveHeroToFirebase(url) {
       url, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     // Update preview
-    const img = document.getElem
+    const img = document.g
