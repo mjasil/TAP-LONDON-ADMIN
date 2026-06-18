@@ -41,7 +41,7 @@ async function importAllJSON() {
         const item = items[i];
         const id = (item.id || item.name || i.toString())
           .toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        const ref = db.collection(sec).doc(id || 'item-' + i);
+        const ref = db.collection(colName).doc(id || 'item-' + i);
         batch.set(ref, { ...item, order: i }, { merge: true });
         count++;
         if (count === 499) {
@@ -170,7 +170,7 @@ async function importAllJSON() {
         const item = items[i];
         const id = (item.id || item.name || i.toString())
           .toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        const ref = db.collection(sec).doc(id || 'item-' + i);
+        const ref = db.collection(colName).doc(id || 'item-' + i);
         batch.set(ref, { ...item, order: i }, { merge: true });
         count++;
         if (count === 499) {
@@ -299,7 +299,7 @@ async function importAllJSON() {
         const item = items[i];
         const id = (item.id || item.name || i.toString())
           .toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        const ref = db.collection(sec).doc(id || 'item-' + i);
+        const ref = db.collection(colName).doc(id || 'item-' + i);
         batch.set(ref, { ...item, order: i }, { merge: true });
         count++;
         if (count === 499) {
@@ -1028,7 +1028,7 @@ function toggleSidebar() {
 async function refreshStats() {
   for (const sec of Object.keys(SECTIONS)) {
     try {
-      const snap = await db.collection(sec).get();
+      const snap = await db.collection(getCollectionName(sec)).get();
       const el = document.getElementById('stat-'+sec);
       if (el) el.textContent = snap.size;
     } catch(e) {}
@@ -1062,7 +1062,8 @@ async function renderSectionPage(sec) {
 
 async function loadSectionItems(sec) {
   try {
-    const snap = await db.collection(sec).orderBy('order','asc').get().catch(() => db.collection(sec).get());
+    const col = getCollectionName(sec);
+    const snap = await db.collection(col).orderBy('order','asc').get().catch(() => db.collection(col).get());
     const items = [];
     snap.forEach(doc => items.push({id:doc.id,...doc.data()}));
     renderItemList(sec, items);
@@ -1131,7 +1132,7 @@ async function dragDrop(e, sec) {
   const batch = db.batch();
   newRows.forEach((row, i) => {
     const id = row.dataset.id;
-    if (id) batch.update(db.collection(sec).doc(id), { order: i });
+    if (id) batch.update(db.collection(getCollectionName(sec)).doc(id), { order: i });
   });
   await batch.commit();
   showToast('Order saved', 'success');
@@ -1301,7 +1302,7 @@ async function saveItem(sec, id) {
       addAudit(`Updated "${data.name}" in ${sec}`);
     } else {
       // Get count for order
-      const snap = await db.collection(sec).get();
+      const snap = await db.collection(getCollectionName(sec)).get();
       data.order = snap.size;
       data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
       await db.collection(getCollectionName(sec)).add(data);
@@ -1338,7 +1339,7 @@ async function deleteItem(sec, id, name) {
 // EXPORT JSON
 // ═══════════════════════════════════════════
 async function exportSection(sec) {
-  const snap = await db.collection(sec).get();
+  const snap = await db.collection(getCollectionName(sec)).get();
   const items = [];
   snap.forEach(doc => items.push({id:doc.id,...doc.data()}));
   const blob = new Blob([JSON.stringify({items},null,2)],{type:'application/json'});
@@ -1908,7 +1909,7 @@ async function importAllJSON() {
         const item = items[i];
         const id = (item.id || item.name || i.toString())
           .toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        const ref = db.collection(sec).doc(id || 'item-' + i);
+        const ref = db.collection(colName).doc(id || 'item-' + i);
         batch.set(ref, { ...item, order: i }, { merge: true });
         count++;
         if (count === 499) {
@@ -1986,7 +1987,4 @@ async function saveHeroToFirebase(url) {
       url, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     // Update preview
-    const img = document.getElementById('hero-current-img');
-    if (img) img.src = url;
-    const input = document.getElementById('hero-url-input');
-    if (input)
+    const img = document.getElem
