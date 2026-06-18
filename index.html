@@ -13,7 +13,7 @@ async function importAllJSON() {
 
   // Read directly from GitHub raw — always public
   const GITHUB_RAW = 'https://raw.githubusercontent.com/rakkan1l/TAP-LONDON/main/data';
-  const sections = ['places','food','shopping','nightlife','kids','muslim','emergency'];
+  const sections = ['places','food','shopping','nightlife','kids','muslim','emergency','hotels','offers','hidden-gems','trending','sports'];
 
   showToast('Starting import from GitHub...', 'success');
   let totalImported = 0;
@@ -140,7 +140,7 @@ async function importAllJSON() {
 
   // Read directly from GitHub raw — always public
   const GITHUB_RAW = 'https://raw.githubusercontent.com/rakkan1l/TAP-LONDON/main/data';
-  const sections = ['places','food','shopping','nightlife','kids','muslim','emergency'];
+  const sections = ['places','food','shopping','nightlife','kids','muslim','emergency','hotels','offers','hidden-gems','trending','sports'];
 
   showToast('Starting import from GitHub...', 'success');
   let totalImported = 0;
@@ -267,7 +267,7 @@ async function importAllJSON() {
 
   // Read directly from GitHub raw — always public
   const GITHUB_RAW = 'https://raw.githubusercontent.com/rakkan1l/TAP-LONDON/main/data';
-  const sections = ['places','food','shopping','nightlife','kids','muslim','emergency'];
+  const sections = ['places','food','shopping','nightlife','kids','muslim','emergency','hotels','offers','hidden-gems','trending','sports'];
 
   showToast('Starting import from GitHub...', 'success');
   let totalImported = 0;
@@ -625,6 +625,22 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;}
         <div class="nav-item" onclick="showPage('emergency')">
           <span class="nav-icon">🚨</span><span>Emergency</span>
         </div>
+        <div class="nav-section">New Sections</div>
+        <div class="nav-item" onclick="showPage('hotels')">
+          <span class="nav-icon">🏨</span><span>Hotels</span>
+        </div>
+        <div class="nav-item" onclick="showPage('offers')">
+          <span class="nav-icon">🏷️</span><span>Offers & Deals</span>
+        </div>
+        <div class="nav-item" onclick="showPage('hidden-gems')">
+          <span class="nav-icon">💎</span><span>Hidden Gems</span>
+        </div>
+        <div class="nav-item" onclick="showPage('trending')">
+          <span class="nav-icon">🔥</span><span>Trending</span>
+        </div>
+        <div class="nav-item" onclick="showPage('sports')">
+          <span class="nav-icon">⚽</span><span>Sports</span>
+        </div>
         <div class="nav-section">Tools</div>
         <div class="nav-item" onclick="showPage('popups')">
           <span class="nav-icon">🎯</span><span>Popups & Offers</span>
@@ -677,6 +693,11 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;}
             <div class="stat-card"><div class="stat-num" id="stat-nightlife">—</div><div class="stat-label">Nightlife</div></div>
             <div class="stat-card"><div class="stat-num" id="stat-kids">—</div><div class="stat-label">Kids</div></div>
             <div class="stat-card"><div class="stat-num" id="stat-muslim">—</div><div class="stat-label">Muslim Guide</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-hotels">—</div><div class="stat-label">Hotels</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-offers">—</div><div class="stat-label">Offers</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-hidden-gems">—</div><div class="stat-label">Hidden Gems</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-trending">—</div><div class="stat-label">Trending</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-sports">—</div><div class="stat-label">Sports</div></div>
           </div>
           <!-- HERO IMAGE CHANGER -->
           <div class="card" style="margin-bottom:16px;">
@@ -710,6 +731,10 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;}
               <button class="btn btn-secondary btn-sm" onclick="showPage('places');openAddModal('places')">+ Add Place</button>
               <button class="btn btn-secondary btn-sm" onclick="showPage('food');openAddModal('food')">+ Add Food</button>
               <button class="btn btn-secondary btn-sm" onclick="showPage('nightlife');openAddModal('nightlife')">+ Add Nightlife</button>
+              <button class="btn btn-secondary btn-sm" onclick="showPage('hotels');openAddModal('hotels')">+ Add Hotel</button>
+              <button class="btn btn-secondary btn-sm" onclick="showPage('offers');openAddModal('offers')">+ Add Offer</button>
+              <button class="btn btn-secondary btn-sm" onclick="showPage('hidden-gems');openAddModal('hidden-gems')">+ Add Hidden Gem</button>
+              <button class="btn btn-secondary btn-sm" onclick="showPage('trending');openAddModal('trending')">+ Add Trending</button>
               <button class="btn btn-secondary btn-sm" onclick="showPage('popups')">Set Popup</button>
               <button class="btn btn-secondary btn-sm" onclick="showPage('images')">Upload Image</button>
               <button class="btn btn-secondary btn-sm" onclick="importAllJSON()" style="background:rgba(201,168,76,0.15);color:#c9a84c;border:1px solid rgba(201,168,76,0.3);">⬆ Import JSON → Firebase</button>
@@ -895,7 +920,12 @@ const SECTIONS = {
   nightlife: { label:'Nightlife',    icon:'🌙', cats:['Bars','Clubs','Live Music','Rooftop Bars'],                  fields:['name','area','category','description','openingHours','entryFee','dressCode','mapsUrl'], ratio:'4:3 (800×600px)' },
   kids:      { label:'Kids',         icon:'👨‍👩‍👧', cats:['Parks','Museums','Activities','Entertainment'],              fields:['name','area','category','description','openingHours','entryFee','ageRange','mapsUrl'], ratio:'4:3 (800×600px)' },
   muslim:    { label:'Muslim Guide', icon:'🕌', cats:['Mosques','Halal Food','Prayer Rooms','Islamic Sites'],       fields:['name','area','category','description','openingHours','entryFee','mapsUrl'], ratio:'4:3 (800×600px)' },
-  emergency: { label:'Emergency',    icon:'🚨', cats:['Hospitals','Police','Scam Alerts','Helplines'],              fields:['name','area','category','description','phone','address','mapsUrl'], ratio:'4:3 (800×600px)' },
+  emergency:    { label:'Emergency',    icon:'🚨', cats:['Hospitals','Police','Scam Alerts','Helplines'],              fields:['name','area','category','description','phone','address','mapsUrl'], ratio:'4:3 (800×600px)' },
+  hotels:       { label:'Hotels',        icon:'🏨', cats:['5-star','4-star','3-star','Budget','Family','Spa','Luxury'],  fields:['name','area','category','description','priceRange','rating','nearestStation','bookingUrl','mapsUrl'], ratio:'4:3 (800×600px)' },
+  offers:       { label:'Offers',        icon:'🏷️', cats:['Food Offers','Shopping Offers','Hotel Offers','Kids Offers','Student Offers','Family Deals','Weekend Deals'], fields:['name','area','category','description','discount','code','validUntil','mapsUrl'], ratio:'4:3 (800×600px)' },
+  'hidden-gems':{ label:'Hidden Gems',   icon:'💎', cats:['Hidden Spots','Secret Gardens','Unique Experiences','Hidden Neighbourhoods','Underground Bars'], fields:['name','area','category','description','vibe','bestTime','entryFee','mapsUrl'], ratio:'4:3 (800×600px)' },
+  trending:     { label:'Trending',      icon:'🔥', cats:['Trending Restaurants','Viral Desserts','New Openings','Famous Coffee','Viral Experiences'], fields:['name','area','category','description','priceRange','vibe','mapsUrl'], ratio:'4:3 (800×600px)' },
+  sports:       { label:'Sports',        icon:'⚽', cats:['Football','Cricket','Tennis','Boxing','Rugby','Athletics'],   fields:['name','area','sport','team','capacity','description','nearestStation','mapsUrl'], ratio:'4:3 (800×600px)' },
 };
 
 const LANGS = ['English','Arabic','Urdu','Malayalam','French','Spanish','Turkish','Bengali'];
@@ -1839,7 +1869,7 @@ async function importAllJSON() {
 
   // Read directly from GitHub raw — always public
   const GITHUB_RAW = 'https://raw.githubusercontent.com/rakkan1l/TAP-LONDON/main/data';
-  const sections = ['places','food','shopping','nightlife','kids','muslim','emergency'];
+  const sections = ['places','food','shopping','nightlife','kids','muslim','emergency','hotels','offers','hidden-gems','trending','sports'];
 
   showToast('Starting import from GitHub...', 'success');
   let totalImported = 0;
