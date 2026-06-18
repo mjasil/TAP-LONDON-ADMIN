@@ -574,7 +574,7 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;}
 <body>
 
 <!-- LOGIN -->
-<div id="login-page" style="display:none">
+<div id="login-page">
   <div class="login-box">
     <div class="login-logo">
       <h1>TAP LONDON</h1>
@@ -596,7 +596,7 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;}
 </div>
 
 <!-- MAIN APP -->
-<div id="app" style="display:block">
+<div id="app">
   <div class="layout">
     <!-- SIDEBAR -->
     <div class="sidebar" id="sidebar">
@@ -963,11 +963,12 @@ let dragSrc = null;
 // AUTH
 // ═══════════════════════════════════════════
 auth.onAuthStateChanged(user => {
-  if (true) { // Login disabled - direct access
-    currentUser = user || {email:'admin@taplondon.com'};
+  if (user) {
+    currentUser = user;
     document.getElementById('login-page').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    document.getElementById('user-badge').textContent = 'dlxadmin';
+    document.getElementById('user-badge').textContent = user.email.split('@')[0];
+    document.getElementById('settings-email').value = user.email;
     refreshStats();
     loadAuditLog();
     setTimeout(loadCurrentHero, 500);
@@ -982,7 +983,7 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-async async function doLogin() {
+async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pw = document.getElementById('login-pw').value;
   const err = document.getElementById('login-err');
@@ -1985,4 +1986,5 @@ async function saveHeroToFirebase(url) {
     await db.collection('siteImages').doc('hero').set({
       url, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    // Update prev
+    // Update preview
+    const img = document.getElem
