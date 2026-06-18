@@ -911,6 +911,11 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+function getCollectionName(sec) {
+  const map = {'hidden-gems': 'hiddenGems'};
+  return map[sec] || sec;
+}
+
 // ═══════════════════════════════════════════
 // CLOUDINARY CONFIG
 // ═══════════════════════════════════════════
@@ -1984,6 +1989,4 @@ async function saveHeroToFirebase(url) {
     const img = document.getElementById('hero-current-img');
     if (img) img.src = url;
     const input = document.getElementById('hero-url-input');
-    if (input) input.value = url;
-    const status = document.getElementById('hero-save-status');
-    if (status) { status
+    if (input)
