@@ -574,7 +574,7 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;}
 <body>
 
 <!-- LOGIN -->
-<div id="login-page">
+<div id="login-page" style="display:none">
   <div class="login-box">
     <div class="login-logo">
       <h1>TAP LONDON</h1>
@@ -596,7 +596,7 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;}
 </div>
 
 <!-- MAIN APP -->
-<div id="app">
+<div id="app" style="display:block">
   <div class="layout">
     <!-- SIDEBAR -->
     <div class="sidebar" id="sidebar">
@@ -962,13 +962,21 @@ let dragSrc = null;
 // ═══════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════
+// Auto-initialize without login
+window.addEventListener('DOMContentLoaded', () => {
+  currentUser = { email: 'admin@taplondon.com' };
+  document.getElementById('user-badge').textContent = 'dlxadmin';
+  refreshStats();
+  loadAuditLog();
+  showPage('dashboard');
+});
+
 auth.onAuthStateChanged(user => {
-  if (user) {
-    currentUser = user;
+  if (true) { // Login disabled - direct access
+    currentUser = user || {email:'admin@taplondon.com'};
     document.getElementById('login-page').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    document.getElementById('user-badge').textContent = user.email.split('@')[0];
-    document.getElementById('settings-email').value = user.email;
+    document.getElementById('user-badge').textContent = 'dlxadmin';
     refreshStats();
     loadAuditLog();
     setTimeout(loadCurrentHero, 500);
@@ -983,7 +991,7 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-async function doLogin() {
+async async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pw = document.getElementById('login-pw').value;
   const err = document.getElementById('login-err');
@@ -1977,14 +1985,4 @@ async function uploadHeroDash(input) {
 
 async function saveHeroUrl() {
   const url = document.getElementById('hero-url-input')?.value.trim();
-  if (!url || !url.startsWith('http')) { showToast('Enter a valid URL', 'error'); return; }
-  await saveHeroToFirebase(url);
-}
-
-async function saveHeroToFirebase(url) {
-  try {
-    await db.collection('siteImages').doc('hero').set({
-      url, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    // Update preview
-    const img = document.getElem
+  if (!url || !url.startsWith('http')) { showToast('Enter a va
