@@ -20,13 +20,15 @@ async function importAllJSON() {
 
   for (const sec of sections) {
     try {
-      const res = await fetch(GITHUB_RAW + '/' + sec + '.json');
+      const jsonFile = sec; // file name stays same (hidden-gems.json)
+      const res = await fetch(GITHUB_RAW + '/' + jsonFile + '.json');
       if (!res.ok) {
         showToast('Skipped ' + sec + ' — file not found on GitHub', 'error');
         continue;
       }
       const data = await res.json();
       const items = data.items || data.venues || data || [];
+      const colName = getCollectionName(sec); // Firebase collection name
       if (!items.length) {
         showToast('Skipped ' + sec + ' — empty', 'error');
         continue;
@@ -147,13 +149,15 @@ async function importAllJSON() {
 
   for (const sec of sections) {
     try {
-      const res = await fetch(GITHUB_RAW + '/' + sec + '.json');
+      const jsonFile = sec; // file name stays same (hidden-gems.json)
+      const res = await fetch(GITHUB_RAW + '/' + jsonFile + '.json');
       if (!res.ok) {
         showToast('Skipped ' + sec + ' — file not found on GitHub', 'error');
         continue;
       }
       const data = await res.json();
       const items = data.items || data.venues || data || [];
+      const colName = getCollectionName(sec); // Firebase collection name
       if (!items.length) {
         showToast('Skipped ' + sec + ' — empty', 'error');
         continue;
@@ -274,13 +278,15 @@ async function importAllJSON() {
 
   for (const sec of sections) {
     try {
-      const res = await fetch(GITHUB_RAW + '/' + sec + '.json');
+      const jsonFile = sec; // file name stays same (hidden-gems.json)
+      const res = await fetch(GITHUB_RAW + '/' + jsonFile + '.json');
       if (!res.ok) {
         showToast('Skipped ' + sec + ' — file not found on GitHub', 'error');
         continue;
       }
       const data = await res.json();
       const items = data.items || data.venues || data || [];
+      const colName = getCollectionName(sec); // Firebase collection name
       if (!items.length) {
         showToast('Skipped ' + sec + ' — empty', 'error');
         continue;
@@ -1132,7 +1138,7 @@ async function dragDrop(e, sec) {
 // ═══════════════════════════════════════════
 function openAddModal(sec) { openItemModal(sec, null); }
 async function openEditModal(sec, id) {
-  const doc = await db.collection(sec).doc(id).get();
+  const doc = await db.collection(getCollectionName(sec)).doc(id).get();
   openItemModal(sec, {id, ...doc.data()});
 }
 
@@ -1285,7 +1291,7 @@ async function saveItem(sec, id) {
 
   try {
     if (id) {
-      await db.collection(sec).doc(id).update(data);
+      await db.collection(getCollectionName(sec)).doc(id).update(data);
       showToast('Updated successfully', 'success');
       addAudit(`Updated "${data.name}" in ${sec}`);
     } else {
@@ -1293,7 +1299,7 @@ async function saveItem(sec, id) {
       const snap = await db.collection(sec).get();
       data.order = snap.size;
       data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      await db.collection(sec).add(data);
+      await db.collection(getCollectionName(sec)).add(data);
       showToast('Added successfully', 'success');
       addAudit(`Added "${data.name}" to ${sec}`);
     }
@@ -1313,7 +1319,7 @@ function v(id) { const el = document.getElementById(id); return el ? el.value : 
 async function deleteItem(sec, id, name) {
   if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
   try {
-    await db.collection(sec).doc(id).delete();
+    await db.collection(getCollectionName(sec)).doc(id).delete();
     showToast('Deleted', 'success');
     addAudit(`Deleted "${name}" from ${sec}`);
     loadSectionItems(sec);
@@ -1564,7 +1570,7 @@ async function switchLang(sec, id, lang, el) {
   if (lang === 'English' || !id) return;
   // Load translation from Firebase
   try {
-    const doc = await db.collection(sec).doc(id).collection('translations').doc(lang).get();
+    const doc = await db.collection(colName).doc(id).collection('translations').doc(lang).get();
     if (doc.exists) {
       const data = doc.data();
       ['name','description'].forEach(f => {
@@ -1876,13 +1882,15 @@ async function importAllJSON() {
 
   for (const sec of sections) {
     try {
-      const res = await fetch(GITHUB_RAW + '/' + sec + '.json');
+      const jsonFile = sec; // file name stays same (hidden-gems.json)
+      const res = await fetch(GITHUB_RAW + '/' + jsonFile + '.json');
       if (!res.ok) {
         showToast('Skipped ' + sec + ' — file not found on GitHub', 'error');
         continue;
       }
       const data = await res.json();
       const items = data.items || data.venues || data || [];
+      const colName = getCollectionName(sec); // Firebase collection name
       if (!items.length) {
         showToast('Skipped ' + sec + ' — empty', 'error');
         continue;
@@ -1978,22 +1986,4 @@ async function saveHeroToFirebase(url) {
     const input = document.getElementById('hero-url-input');
     if (input) input.value = url;
     const status = document.getElementById('hero-save-status');
-    if (status) { status.textContent = '✓ Hero image updated! Refresh TAP LONDON to see it.'; setTimeout(() => { status.textContent=''; }, 4000); }
-    showToast('Hero image saved!', 'success');
-    addAudit('Updated homepage hero image');
-  } catch(e) {
-    showToast('Error saving: ' + e.message, 'error');
-  }
-}
-
-</script>
-</body>
-</html>
-          <div id="page-hotels" class="page"></div>
-          <div id="page-offers" class="page"></div>
-          <div id="page-hidden-gems" class="page"></div>
-          <div id="page-trending" class="page"></div>
-          <div id="page-sports" class="page"></div>
-
-
-
+    if (status) { status
