@@ -28,7 +28,7 @@ async function importAllJSON() {
       }
       const data = await res.json();
       const items = data.items || data.venues || data || [];
-      const colName = getCollectionName(sec); // Firebase collection name
+      
       if (!items.length) {
         showToast('Skipped ' + sec + ' — empty', 'error');
         continue;
@@ -41,7 +41,7 @@ async function importAllJSON() {
         const item = items[i];
         const id = (item.id || item.name || i.toString())
           .toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        const ref = db.collection(colName).doc(id || 'item-' + i);
+        const ref = db.collection(getCollectionName(sec)).doc(id || 'item-' + i);
         batch.set(ref, { ...item, order: i }, { merge: true });
         count++;
         if (count === 499) {
@@ -157,7 +157,7 @@ async function importAllJSON() {
       }
       const data = await res.json();
       const items = data.items || data.venues || data || [];
-      const colName = getCollectionName(sec); // Firebase collection name
+      
       if (!items.length) {
         showToast('Skipped ' + sec + ' — empty', 'error');
         continue;
@@ -170,7 +170,7 @@ async function importAllJSON() {
         const item = items[i];
         const id = (item.id || item.name || i.toString())
           .toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        const ref = db.collection(colName).doc(id || 'item-' + i);
+        const ref = db.collection(getCollectionName(sec)).doc(id || 'item-' + i);
         batch.set(ref, { ...item, order: i }, { merge: true });
         count++;
         if (count === 499) {
@@ -286,7 +286,7 @@ async function importAllJSON() {
       }
       const data = await res.json();
       const items = data.items || data.venues || data || [];
-      const colName = getCollectionName(sec); // Firebase collection name
+      
       if (!items.length) {
         showToast('Skipped ' + sec + ' — empty', 'error');
         continue;
@@ -299,7 +299,7 @@ async function importAllJSON() {
         const item = items[i];
         const id = (item.id || item.name || i.toString())
           .toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        const ref = db.collection(colName).doc(id || 'item-' + i);
+        const ref = db.collection(getCollectionName(sec)).doc(id || 'item-' + i);
         batch.set(ref, { ...item, order: i }, { merge: true });
         count++;
         if (count === 499) {
@@ -991,7 +991,7 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-async async async function doLogin() {
+async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pw = document.getElementById('login-pw').value;
   const err = document.getElementById('login-err');
@@ -1584,7 +1584,7 @@ async function switchLang(sec, id, lang, el) {
   if (lang === 'English' || !id) return;
   // Load translation from Firebase
   try {
-    const doc = await db.collection(colName).doc(id).collection('translations').doc(lang).get();
+    const doc = await db.collection(getCollectionName(sec)).doc(id).collection('translations').doc(lang).get();
     if (doc.exists) {
       const data = doc.data();
       ['name','description'].forEach(f => {
@@ -1904,7 +1904,6 @@ async function importAllJSON() {
       }
       const data = await res.json();
       const items = data.items || data.venues || data || [];
-      const colName = getCollectionName(sec); // Firebase collection name
       if (!items.length) {
         showToast('Skipped ' + sec + ' — empty', 'error');
         continue;
@@ -1917,7 +1916,7 @@ async function importAllJSON() {
         const item = items[i];
         const id = (item.id || item.name || i.toString())
           .toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        const ref = db.collection(colName).doc(id || 'item-' + i);
+        const ref = db.collection(getCollectionName(sec)).doc(id || 'item-' + i);
         batch.set(ref, { ...item, order: i }, { merge: true });
         count++;
         if (count === 499) {
@@ -1985,4 +1984,11 @@ async function uploadHeroDash(input) {
 
 async function saveHeroUrl() {
   const url = document.getElementById('hero-url-input')?.value.trim();
-  if (!url || !url.startsWith('http')) { showToast('Ente
+  if (!url || !url.startsWith('http')) { showToast('Enter a valid URL', 'error'); return; }
+  await saveHeroToFirebase(url);
+}
+
+async function saveHeroToFirebase(url) {
+  try {
+    await db.collection('siteImages').doc('hero').set({
+      url, updatedAt: firebase.fire
