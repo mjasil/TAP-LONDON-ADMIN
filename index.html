@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TAP LONDON — Admin</title>
+<style>
+  :root {
+    --bg: #0d0d1a; --bg2: #14142a; --card: #1a1a2e; --border: rgba(201,168,76,0.15);
+    --gold: #c9a84c; --gold-light: #f0d07a; --text: #f9f7f2; --text2: rgba(249,247,242,0.6);
+    --text3: rgba(249,247,242,0.35); --red: #e55; --green: #7ac9a0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.3); border-radius: 10px; }
+
+  /* LOGIN */
+  #login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .login-box { width: 100%; max-width: 380px; }
+  .login-logo { text-align: center; margin-bottom: 32px; }
+  .login-logo h1 { font-size: 2rem; color: var(--gold); letter-spacing: 2px; font-weight: 700; }
+  .login-logo p { color: var(--text3); font-size: 0.8rem; letter-spacing: 3px; text-transform: uppercase; margin-top: 6px; }
+  .login-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 28px; }
+  .form-group { margin-bottom: 18px; }
+  .form-group label { display: block; font-size: 0.72rem; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600; }
+  input, select, textarea {
+    width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 0.9rem; outline: none;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--gold); }
+  textarea { resize: vertical; min-height: 80px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: none; border-radius: 10px; padding: 12px 20px; font-size: 0.86rem; font-weight: 700;
+    cursor: pointer; font-family: inherit; transition: opacity 0.15s; text-decoration: none;
+  }
+  .btn:active { opacity: 0.8; }
+  .btn-primary { background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: #1a1a2e; }
+  .btn-secondary { background: rgba(255,255,255,0.08); color: var(--text); border: 1px solid rgba(255,255,255,0.1); }
+  .btn-danger { background: rgba(229,85,85,0.15); color: var(--red); border: 1px solid rgba(229,85,85,0.3); }
+  .btn-sm { padding: 8px 14px; font-size: 0.78rem; }
+  .btn-block { width: 100%; }
+  #login-err { color: var(--red); font-size: 0.8rem; margin-top: 10px; text-align: center; min-height: 18px; }
+
+  /* APP LAYOUT */
+  #app { display: none; }
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 230px; background: var(--bg2); border-right: 1px solid var(--border);
+    flex-shrink: 0; padding: 20px 0; position: fixed; top: 0; left: 0; bottom: 0; overflow-y: auto;
+    transition: transform 0.25s; z-index: 100;
+  }
+  .sidebar-logo { padding: 0 20px 20px; display: flex; align-items: center; gap: 10px; }
+  .sidebar-logo .badge { width: 36px; height: 36px; background: var(--gold); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #1a1a2e; font-size: 1.1rem; }
+  .sidebar-logo span { font-weight: 700; color: var(--gold); font-size: 1rem; letter-spacing: 0.5px; }
+  .nav-section { padding: 16px 20px 8px; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text3); font-weight: 700; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px; padding: 10px 20px; cursor: pointer;
+    color: var(--text2); font-size: 0.86rem; font-weight: 500; transition: all 0.15s;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+  .nav-item.active { background: rgba(201,168,76,0.1); color: var(--gold); border-right: 3px solid var(--gold); }
+  .nav-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+
+  .main { flex: 1; margin-left: 230px; min-height: 100vh; }
+  .topbar {
+    background: var(--bg2); border-bottom: 1px solid var(--border); padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50;
+  }
+  .topbar h1 { font-size: 1.3rem; font-weight: 700; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .user-badge { background: rgba(201,168,76,0.12); color: var(--gold); padding: 6px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
+  .menu-toggle { display: none; background: none; border: none; color: var(--text); font-size: 1.3rem; cursor: pointer; }
+
+  .content { padding: 24px; max-width: 1400px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* DASHBOARD */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .stat-num { font-size: 2rem; font-weight: 800; color: var(--gold); }
+  .stat-label { font-size: 0.74rem; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+  .card h3 { font-size: 0.95rem; margin-bottom: 14px; color: var(--gold); }
+
+  /* SECTIONS */
+  .section-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+  .section-title h2 { font-size: 1.3rem; font-weight: 700; }
+  .section-title p { font-size: 0.78rem; color: var(--text3); margin-top: 2px; }
+  .search-bar { width: 100%; margin-bottom: 16px; }
+  .item-list { display: grid; gap: 10px; }
+  .item-row {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 16px; display: flex; align-items: center; gap: 14px;
+  }
+  .item-thumb { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: #222; }
+  .item-info { flex: 1; min-width: 0; }
+  .item-name { font-weight: 700; font-size: 0.92rem; }
+  .item-meta { font-size: 0.74rem; color: var(--text3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .icon-btn {
+    width: 32px; height: 32px; border-radius: 8px; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+    background: rgba(255,255,255,0.06); color: var(--text2);
+  }
+  .icon-btn.danger { background: rgba(229,85,85,0.12); color: var(--red); }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 999;
+    align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-box {
+    background: var(--bg2); border-radius: 20px 20px 0 0; width: 100%; max-width: 600px;
+    max-height: 90vh; overflow-y: auto; padding: 24px;
+  }
+  @media (min-width: 768px) {
+    .modal-overlay { align-items: center; }
+    .modal-box { border-radius: 20px; max-height: 85vh; }
+  }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .modal-header h3 { font-size: 1.1rem; }
+  .modal-close { background: rgba(255,255,255,0.08); border: none; color: var(--text); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1rem; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+  .modal-footer { display: flex; gap: 10px; margin-top: 20px; }
+
+  /* TOAST */
+  #toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 20px;
+    font-size: 0.84rem; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.3); animation: toastIn 0.25s;
+    white-space: nowrap;
+  }
+  .toast.success { border-color: rgba(122,201,160,0.4); color: var(--green); }
+  .toast.error { border-color: rgba(229,85,85,0.4); color: var(--red); }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--text3); }
+  .empty-state-icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+  @media (max-width: 900px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; }
+    .menu-toggle { display: block; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-page">
+  <div class="login-box">
+    <div class="login-logo">
+      <h1>TAP LONDON</h1>
+      <p>Admin Panel</p>
+    </div>
+    <div class="login-card">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="admin@taplondon.com" autocomplete="email"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-pw" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="doLogin()" id="login-btn">Login to Admin</button>
+      <div id="login-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="layout">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-logo"><div class="badge">T</div><span>TAP LONDON</span></div>
+      <div class="nav-section">Main</div>
+      <div class="nav-item" data-page="dashboard" onclick="showPage('dashboard')"><span class="nav-icon">📊</span><span>Dashboard</span></div>
+      <div class="nav-section">Content</div>
+      <div class="nav-item" data-page="places" onclick="showPage('places')"><span class="nav-icon">🏛️</span><span>Places</span></div>
+      <div class="nav-item" data-page="food" onclick="showPage('food')"><span class="nav-icon">🍽️</span><span>Food</span></div>
+      <div class="nav-item" data-page="shopping" onclick="showPage('shopping')"><span class="nav-icon">🛍️</span><span>Shopping</span></div>
+      <div class="nav-item" data-page="nightlife" onclick="showPage('nightlife')"><span class="nav-icon">🌙</span><span>Nightlife</span></div>
+      <div class="nav-item" data-page="kids" onclick="showPage('kids')"><span class="nav-icon">👨‍👩‍👧</span><span>Kids &amp; Family</span></div>
+      <div class="nav-item" data-page="muslim" onclick="showPage('muslim')"><span class="nav-icon">🕌</span><span>Muslim Guide</span></div>
+      <div class="nav-item" data-page="emergency" onclick="showPage('emergency')"><span class="nav-icon">🚨</span><span>Emergency</span></div>
+      <div class="nav-section">New Sections</div>
+      <div class="nav-item" data-page="hotels" onclick="showPage('hotels')"><span class="nav-icon">🏨</span><span>Hotels</span></div>
+      <div class="nav-item" data-page="offers" onclick="showPage('offers')"><span class="nav-icon">🏷️</span><span>Offers &amp; Deals</span></div>
+      <div class="nav-item" data-page="hidden-gems" onclick="showPage('hidden-gems')"><span class="nav-icon">💎</span><span>Hidden Gems</span></div>
+      <div class="nav-item" data-page="trending" onclick="showPage('trending')"><span class="nav-icon">🔥</span><span>Trending</span></div>
+      <div class="nav-item" data-page="sports" onclick="showPage('sports')"><span class="nav-icon">⚽</span><span>Sports</span></div>
+      <div class="nav-section">Tools</div>
+      <div class="nav-item" data-page="popups" onclick="showPage('popups')"><span class="nav-icon">📢</span><span>Popups &amp; Offers</span></div>
+      <div class="nav-item" data-page="images" onclick="showPage('images')"><span class="nav-icon">🖼️</span><span>Image Manager</span></div>
+      <div class="nav-item" data-page="settings" onclick="showPage('settings')"><span class="nav-icon">⚙️</span><span>Settings</span></div>
+    </div>
+
+    <div class="main">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+          <h1 id="topbar-title">Dashboard</h1>
+        </div>
+        <div class="topbar-right">
+          <span class="user-badge" id="user-badge">—</span>
+          <button class="icon-btn" onclick="doLogout()" title="Logout">🚪</button>
+        </div>
+      </div>
+
+      <div class="content">
+
+        <!-- DASHBOARD -->
+        <div id="page-dashboard" class="page active">
+          <p style="color:var(--text3);margin-bottom:20px;">Welcome back. Here's what's live on TAP LONDON.</p>
+          <button class="btn btn-secondary" onclick="refreshStats()" style="margin-bottom:20px;">↻ Refresh</button>
+          <div class="stats-grid" id="stats-grid"></div>
+
+          <div class="card">
+            <h3>⚡ Quick Actions</h3>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="showPage('places');openAddModal('places')">+ Add Place</button>
+              <button class="btn btn-secondary btn-sm" onclick="showPage('food');openAddModal('food')">+ Add Food</button>
+              <button class="btn btn-secondary btn-sm" onclick="showPage('hotels');openAddModal('hotels')">+ Add Hotel</button>
+              <button class="btn btn-secondary btn-sm" onclick="showPage('offers');openAddModal('offers')">+ Add Offer</button>
+              <button class="btn btn-secondary btn-sm" onclick="showPage('images')">Upload Image</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>📥 Import from GitHub</h3>
+            <p style="font-size:0.8rem;color:var(--text3);margin-bottom:14px;">Import all JSON data files from GitHub repo into Firebase. Existing items will be updated.</p>
+            <button class="btn btn-primary" onclick="importFromGitHub()">⬆ Import JSON → Firebase</button>
+          </div>
+        </div>
+
+        <!-- DYNAMIC SECTION PAGES (built by JS) -->
+        <div id="page-places" class="page"></div>
+        <div id="page-food" class="page"></div>
+        <div id="page-shopping" class="page"></div>
+        <div id="page-nightlife" class="page"></div>
+        <div id="page-kids" class="page"></div>
+        <div id="page-muslim" class="page"></div>
+        <div id="page-emergency" class="page"></div>
+        <div id="page-hotels" class="page"></div>
+        <div id="page-offers" class="page"></div>
+        <div id="page-hidden-gems" class="page"></div>
+        <div id="page-trending" class="page"></div>
+        <div id="page-sports" class="page"></div>
+
+        <!-- POPUPS & OFFERS -->
+        <div id="page-popups" class="page">
+          <div class="section-header">
+            <div class="section-title"><h2>📢 Popups &amp; Offers</h2><p>Promotional popups shown on the website</p></div>
+          </div>
+          <div class="card">
+            <h3>Global Popup (shows on all pages)</h3>
+            <div id="popup-form-global"></div>
+          </div>
+          <div class="card">
+            <h3>Section Popups (optional — overrides global on that section)</h3>
+            <p style="font-size:0.78rem;color:var(--text3);margin-bottom:14px;">Choose a section to set a popup specific to that page.</p>
+            <select id="popup-section-select" onchange="loadPopupForm(this.value)" style="margin-bottom:16px;">
+              <option value="">— Select Section —</option>
+              <option value="places">Places</option>
+              <option value="food">Food</option>
+              <option value="shopping">Shopping</option>
+              <option value="nightlife">Nightlife</option>
+              <option value="kids">Kids &amp; Family</option>
+              <option value="muslim">Muslim Guide</option>
+              <option value="hotels">Hotels</option>
+              <option value="offers">Offers</option>
+            </select>
+            <div id="popup-form-section"></div>
+          </div>
+        </div>
+
+        <!-- IMAGE MANAGER -->
+        <div id="page-images" class="page">
+          <div class="section-header">
+            <div class="section-title"><h2>🖼️ Image Manager</h2><p>Homepage hero and category card images</p></div>
+          </div>
+          <div id="image-manager-list"></div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div id="page-settings" class="page">
+          <div class="section-header"><div class="section-title"><h2>⚙️ Settings</h2></div></div>
+          <div class="card">
+            <h3>Account</h3>
+            <p style="font-size:0.85rem;color:var(--text2);">Logged in as: <strong id="settings-email" style="color:var(--gold);">—</strong></p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ITEM MODAL -->
+<div class="modal-overlay" id="item-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-title">Add Item</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-form-fields"></div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-block" onclick="saveItem()">Save</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script>
+// ═══════════════════════════════════════════
+// FIREBASE INIT
+// ═══════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyAUCSRPu1PZvDMyw9AHavW8Tr-xW_XR8oE",
+  authDomain: "tap-london.firebaseapp.com",
+  projectId: "tap-london",
+  storageBucket: "tap-london.firebasestorage.app",
+  messagingSenderId: "462099707600",
+  appId: "1:462099707600:web:613186d61a8013423210d5"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+function getCollectionName(sec) {
+  const map = { 'hidden-gems': 'hiddenGems' };
+  return map[sec] || sec;
+}
+
+// ═══════════════════════════════════════════
+// CLOUDINARY
+// ═══════════════════════════════════════════
+const CLOUD = { name: 'dygvxcour', preset: 'tap_london_upload' };
+
+async function uploadToCloudinary(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUD.preset);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD.name}/image/upload`, { method: 'POST', body: formData });
+  const data = await res.json();
+  return data.secure_url;
+}
+
+// ═══════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw = document.getElementById('login-pw').value;
+  const err = document.getElementById('login-err');
+  const btn = document.getElementById('login-btn');
+  err.textContent = '';
+  if (!email || !pw) { err.textContent = 'Please enter email and password'; return; }
+  btn.textContent = 'Logging in...';
+  try {
+    await auth.signInWithEmailAndPassword(email, pw);
+  } catch (e) {
+    err.textContent = e.message || 'Invalid email or password';
+    btn.textContent = 'Login to Admin';
+  }
+}
+
+function doLogout() {
+  auth.signOut();
+}
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    document.getElementById('login-page').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-badge').textContent = user.email.split('@')[0];
+    document.getElementById('settings-email').textContent = user.email;
+    initApp();
+  } else {
+    document.getElementById('login-page').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-btn').textContent = 'Login to Admin';
+  }
+});
+
+// ═══════════════════════════════════════════
+// SECTIONS CONFIG
+// ═══════════════════════════════════════════
+const SECTIONS = {
+  places: {
+    label: 'Places', icon: '🏛️',
+    cats: ['Top Attractions', 'Hidden Gems', 'Photo Spots', 'Free Things'],
+    fields: [
+      { key: 'name', label: 'Name', type: 'text', required: true },
+      { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
+      { key: 'area', label: 'Area', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'openingHours', label: 'Opening Hours', type: 'text' },
+      { key: 'entryFee', label: 'Entry Fee', type: 'text' },
+      { key: 'priceType', label: 'Price Type', type: 'select', options: ['Free', 'Paid'] },
+      { key: 'offerTag', label: 'Special Offer Available', type: 'checkbox' },
+      { key: 'image', label: 'Main Image URL', type: 'image' },
+      { key: 'gallery', label: 'Gallery (additional photos)', type: 'gallery' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+  food: {
+    label: 'Food', icon: '🍽️',
+    cats: ['Restaurants', 'Coffee Shops', 'Local Spots', 'Halal Food'],
+    fields: [
+      { key: 'name', label: 'Name', type: 'text', required: true },
+      { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
+      { key: 'cuisine', label: 'Cuisine', type: 'text' },
+      { key: 'area', label: 'Area', type: 'text' },
+      { key: 'priceRange', label: 'Price Range (£/££/£££)', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'mustTry', label: 'Must Try', type: 'text' },
+      { key: 'vibe', label: 'Vibe', type: 'select', options: ['Date night', 'Hidden gem', 'Quick bite', 'Aesthetic', 'Family'] },
+      { key: 'opinion', label: 'Our Opinion', type: 'textarea' },
+      { key: 'tags', label: 'Tags (comma separated: halal, viral, date-night)', type: 'text' },
+      { key: 'halal', label: 'Halal', type: 'checkbox' },
+      { key: 'verifiedHalal', label: 'Verified Halal', type: 'checkbox' },
+      { key: 'offer', label: 'Special Offer Available', type: 'checkbox' },
+      { key: 'offerText', label: 'Offer Text', type: 'text' },
+      { key: 'image', label: 'Main Image URL', type: 'image' },
+      { key: 'gallery', label: 'Gallery (additional photos)', type: 'gallery' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+  shopping: {
+    label: 'Shopping', icon: '🛍️',
+    cats: ['Shopping Areas', 'Markets', 'Souvenir Shops'],
+    fields: [
+      { key: 'name', label: 'Name', type: 'text', required: true },
+      { key: 'section', label: 'Category', type: 'select', optionsFrom: 'cats' },
+      { key: 'type', label: 'Type', type: 'text' },
+      { key: 'location', label: 'Location', type: 'text' },
+      { key: 'openingHours', label: 'Opening Hours', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'image', label: 'Image URL', type: 'image' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+  nightlife: {
+    label: 'Nightlife', icon: '🌙',
+    cats: ['Rooftop Bars', 'Clubs', 'Live Music', 'Bars'],
+    fields: [
+      { key: 'name', label: 'Name', type: 'text', required: true },
+      { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
+      { key: 'area', label: 'Area', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'openingHours', label: 'Opening Hours', type: 'text' },
+      { key: 'entryFee', label: 'Entry Fee', type: 'text' },
+      { key: 'dressCode', label: 'Dress Code', type: 'text' },
+      { key: 'image', label: 'Image URL', type: 'image' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+  kids: {
+    label: 'Kids & Family', icon: '👨‍👩‍👧',
+    cats: ['Museums', 'Parks', 'Activities', 'Entertainment'],
+    fields: [
+      { key: 'name', label: 'Name', type: 'text', required: true },
+      { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
+      { key: 'area', label: 'Area', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'openingHours', label: 'Opening Hours', type: 'text' },
+      { key: 'entryFee', label: 'Entry Fee', type: 'text' },
+      { key: 'ageRange', label: 'Age Range', type: 'text' },
+      { key: 'image', label: 'Image URL', type: 'image' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+  muslim: {
+    label: 'Muslim Guide', icon: '🕌',
+    cats: ['Mosques', 'Halal Food', 'Prayer Rooms'],
+    fields: [
+      { key: 'name', label: 'Name', type: 'text', required: true },
+      { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
+      { key: 'area', label: 'Area', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'openingHours', label: 'Opening Hours', type: 'text' },
+      { key: 'image', label: 'Image URL', type: 'image' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+  emergency: {
+    label: 'Emergency', icon: '🚨',
+    cats: ['Hospitals', 'Police', 'Helplines', 'Scam Alerts'],
+    fields: [
+      { key: 'name', label: 'Name', type: 'text', required: true },
+      { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
+      { key: 'area', label: 'Area', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'phone', label: 'Phone Number', type: 'text' },
+      { key: 'address', label: 'Address', type: 'text' },
+      { key: 'image', label: 'Image URL', type: 'image' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+  hotels: {
+    label: 'Hotels', icon: '🏨',
+    cats: ['5-star', '4-star', '3-star', 'Budget', 'Family', 'Spa', 'Luxury'],
+    fields: [
+      { key: 'name', label: 'Hotel Name', type: 'text', required: true },
+      { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
+      { key: 'area', label: 'Area', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'priceRange', label: 'Price Range', type: 'text' },
+      { key: 'rating', label: 'Rating (e.g. 4.5)', type: 'text' },
+      { key: 'nearestStation', label: 'Nearest Station', type: 'text' },
+      { key: 'bookingUrl', label: 'Booking URL', type: 'text' },
+      { key: 'image', label: 'Image URL', type: 'image' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+  offers: {
+    label: 'Offers', icon: '🏷️',
+    cats: ['Food Offers', 'Shopping Offers', 'Hotel Offers', 'Kids Offers', 'Student Offers', 'Family Deals', 'Weekend Deals'],
+    fields: [
+      { key: 'name', label: 'Offer Name', type: 'text', required: true },
+      { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
+      { key: 'area', label: 'Area', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'discount', label: 'Discount (e.g. 20% Off)', type: 'text' },
+      { key: 'code', label: 'Discount Code', type: 'text' },
+      { key: 'validUntil', label: 'Valid Until (YYYY-MM-DD)', type: 'text' },
+      { key: 'image', label: 'Image URL', type: 'image' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+  'hidden-gems': {
+    label: 'Hidden Gems', icon: '💎',
+    cats: ['Hidden Spots', 'Secret Gardens', 'Unique Experiences', 'Hidden Neighbourhoods'],
+    fields: [
+      { key: 'name', label: 'Name', type: 'text', required: true },
+      { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
+      { key: 'area', label: 'Area', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'vibe', label: 'Vibe', type: 'text' },
+      { key: 'bestTime', label: 'Best Time to Visit', type: 'text' },
+      { key: 'entryFee', label: 'Entry Fee', type: 'text' },
+      { key: 'image', label: 'Image URL', type: 'image' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+  trending: {
+    label: 'Trending', icon: '🔥',
+    cats: ['Trending Restaurants', 'Viral Desserts', 'New Openings', 'Famous Coffee'],
+    fields: [
+      { key: 'name', label: 'Name', type: 'text', required: true },
+      { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
+      { key: 'area', label: 'Area', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'priceRange', label: 'Price Range', type: 'text' },
+      { key: 'vibe', label: 'Vibe', type: 'text' },
+      { key: 'image', label: 'Image URL', type: 'image' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+  sports: {
+    label: 'Sports', icon: '⚽',
+    cats: ['Football', 'Cricket', 'Tennis', 'Boxing', 'Rugby'],
+    fields: [
+      { key: 'name', label: 'Venue Name', type: 'text', required: true },
+      { key: 'sport', label: 'Sport', type: 'select', optionsFrom: 'cats' },
+      { key: 'team', label: 'Team (optional)', type: 'text' },
+      { key: 'area', label: 'Area', type: 'text' },
+      { key: 'capacity', label: 'Capacity', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'nearestStation', label: 'Nearest Station', type: 'text' },
+      { key: 'image', label: 'Image URL', type: 'image' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+};
+
+let currentSection = null;
+let currentEditId = null;
+let sectionItemsCache = {};
+
+// ═══════════════════════════════════════════
+// APP INIT
+// ═══════════════════════════════════════════
+function initApp() {
+  Object.keys(SECTIONS).forEach(sec => renderSectionPage(sec));
+  renderImageManager();
+  refreshStats();
+}
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pageEl = document.getElementById('page-' + id);
+  if (pageEl) pageEl.classList.add('active');
+  const navEl = document.querySelector(`.nav-item[data-page="${id}"]`);
+  if (navEl) navEl.classList.add('active');
+
+  const labels = Object.assign(
+    { dashboard: 'Dashboard', images: 'Image Manager', settings: 'Settings', popups: 'Popups & Offers' },
+    Object.fromEntries(Object.entries(SECTIONS).map(([k, v]) => [k, v.label]))
+  );
+  document.getElementById('topbar-title').textContent = labels[id] || id;
+  document.getElementById('sidebar').classList.remove('open');
+
+  if (SECTIONS[id]) loadSectionItems(id);
+  if (id === 'popups') initPopupsPage();
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+function showToast(msg, type) {
+  const container = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type || '');
+  t.textContent = msg;
+  container.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ═══════════════════════════════════════════
+// DASHBOARD STATS
+// ═══════════════════════════════════════════
+async function refreshStats() {
+  const grid = document.getElementById('stats-grid');
+  grid.innerHTML = Object.entries(SECTIONS).map(([key, cfg]) =>
+    `<div class="stat-card"><div class="stat-num" id="stat-${key}">—</div><div class="stat-label">${cfg.icon} ${cfg.label}</div></div>`
+  ).join('');
+
+  for (const sec of Object.keys(SECTIONS)) {
+    try {
+      const snap = await db.collection(getCollectionName(sec)).get();
+      const el = document.getElementById('stat-' + sec);
+      if (el) el.textContent = snap.size;
+    } catch (e) {
+      const el = document.getElementById('stat-' + sec);
+      if (el) el.textContent = '0';
+    }
+  }
+}
+
+// ═══════════════════════════════════════════
+// RENDER SECTION PAGE (builds the static shell once)
+// ═══════════════════════════════════════════
+function renderSectionPage(sec) {
+  const cfg = SECTIONS[sec];
+  const container = document.getElementById('page-' + sec);
+  if (!container) return;
+  container.innerHTML = `
+    <div class="section-header">
+      <div class="section-title">
+        <h2>${cfg.icon} ${cfg.label}</h2>
+        <p id="${sec}-count">Loading...</p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="exportSection('${sec}')">⬇ Export JSON</button>
+        <button class="btn btn-primary" onclick="openAddModal('${sec}')">+ Add ${cfg.label}</button>
+      </div>
+    </div>
+    <input class="search-bar" placeholder="Search ${cfg.label.toLowerCase()}..." oninput="filterList('${sec}', this.value)" id="${sec}-search"/>
+    <div class="item-list" id="${sec}-list">
+      <div class="empty-state"><div class="empty-state-icon">⏳</div>Loading...</div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════
+// LOAD & RENDER ITEMS
+// ═══════════════════════════════════════════
+async function loadSectionItems(sec) {
+  const listEl = document.getElementById(sec + '-list');
+  if (!listEl) return;
+  try {
+    const col = getCollectionName(sec);
+    let snap;
+    try {
+      snap = await db.collection(col).orderBy('order', 'asc').get();
+    } catch (e) {
+      snap = await db.collection(col).get();
+    }
+    const items = [];
+    snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+    sectionItemsCache[sec] = items;
+    renderItemList(sec, items);
+    const cntEl = document.getElementById(sec + '-count');
+    if (cntEl) cntEl.textContent = items.length + ' items';
+  } catch (e) {
+    listEl.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div>Error loading: ${e.message}</div>`;
+  }
+}
+
+function renderItemList(sec, items) {
+  const list = document.getElementById(sec + '-list');
+  if (!list) return;
+  if (!items.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div>No items yet. Click "+ Add" to create one.</div>`;
+    return;
+  }
+  list.innerHTML = items.map(item => `
+    <div class="item-row">
+      <img class="item-thumb" src="${item.image || ''}" onerror="this.style.opacity=0.2" alt=""/>
+      <div class="item-info">
+        <div class="item-name">${esc(item.name || 'Untitled')}</div>
+        <div class="item-meta">${esc(item.category || item.section || item.sport || '')}${item.area ? ' · ' + esc(item.area) : ''}</div>
+      </div>
+      <div class="item-actions">
+        <button class="icon-btn" onclick="openEditModal('${sec}','${item.id}')" title="Edit">✏️</button>
+        <button class="icon-btn danger" onclick="deleteItem('${sec}','${item.id}')" title="Delete">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterList(sec, query) {
+  const items = sectionItemsCache[sec] || [];
+  const q = query.toLowerCase();
+  const filtered = items.filter(item =>
+    (item.name || '').toLowerCase().includes(q) ||
+    (item.area || '').toLowerCase().includes(q) ||
+    (item.category || item.section || item.sport || '').toLowerCase().includes(q)
+  );
+  renderItemList(sec, filtered);
+}
+
+function esc(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+// ═══════════════════════════════════════════
+// ADD / EDIT MODAL
+// ═══════════════════════════════════════════
+function openAddModal(sec) {
+  currentSection = sec;
+  currentEditId = null;
+  const cfg = SECTIONS[sec];
+  document.getElementById('modal-title').textContent = 'Add ' + cfg.label;
+  renderModalFields(cfg, {});
+  document.getElementById('item-modal').classList.add('active');
+}
+
+function openEditModal(sec, id) {
+  currentSection = sec;
+  currentEditId = id;
+  const cfg = SECTIONS[sec];
+  const item = (sectionItemsCache[sec] || []).find(i => i.id === id) || {};
+  document.getElementById('modal-title').textContent = 'Edit ' + cfg.label;
+  renderModalFields(cfg, item);
+  document.getElementById('item-modal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('item-modal').classList.remove('active');
+  currentSection = null;
+  currentEditId = null;
+}
+
+function renderModalFields(cfg, item) {
+  const container = document.getElementById('modal-form-fields');
+  window._galleryState = {};
+  container.innerHTML = cfg.fields.map(f => {
+    let value = item[f.key] || '';
+    if (f.key === 'tags' && Array.isArray(value)) value = value.join(', ');
+    if (f.type === 'textarea') {
+      return `<div class="form-group"><label>${f.label}</label><textarea id="field-${f.key}">${esc(value)}</textarea></div>`;
+    }
+    if (f.type === 'select') {
+      const options = f.optionsFrom ? cfg[f.optionsFrom] : f.options;
+      return `<div class="form-group"><label>${f.label}</label><select id="field-${f.key}">
+        <option value="">— Select —</option>
+        ${options.map(o => `<option value="${esc(o)}" ${value === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+      </select></div>`;
+    }
+    if (f.type === 'image') {
+      return `<div class="form-group">
+        <label>${f.label}</label>
+        <input type="text" id="field-${f.key}" value="${esc(value)}" placeholder="https://..."/>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+          <input type="file" accept="image/*" id="field-${f.key}-upload" style="display:none;" onchange="handleImageUpload('${f.key}', this)"/>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('field-${f.key}-upload').click()">📷 Upload</button>
+          <span id="field-${f.key}-status" style="font-size:0.75rem;color:var(--text3);"></span>
+        </div>
+        ${value ? `<img src="${esc(value)}" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin-top:8px;" id="field-${f.key}-preview"/>` : `<div id="field-${f.key}-preview"></div>`}
+      </div>`;
+    }
+    if (f.type === 'checkbox') {
+      return `<div class="form-group" style="display:flex;align-items:center;gap:10px;">
+        <input type="checkbox" id="field-${f.key}" ${value === true || value === 'true' ? 'checked' : ''} style="width:18px;height:18px;"/>
+        <label style="margin:0;">${f.label}</label>
+      </div>`;
+    }
+    if (f.type === 'gallery') {
+      const galleryArr = Array.isArray(value) ? value : [];
+      window._galleryState = window._galleryState || {};
+      window._galleryState[f.key] = galleryArr.slice();
+      return `<div class="form-group">
+        <label>${f.label}</label>
+        <div id="gallery-thumbs-${f.key}" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          ${galleryArr.map((url, i) => `
+            <div style="position:relative;width:64px;height:64px;">
+              <img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"/>
+              <button type="button" onclick="removeGalleryImage('${f.key}', ${i})" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:0.7rem;cursor:pointer;">✕</button>
+            </div>
+          `).join('')}
+        </div>
+        <input type="file" accept="image/*" multiple id="field-${f.key}-gallery-upload" style="display:none;" onchange="handleGalleryUpload('${f.key}', this)"/>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('field-${f.key}-gallery-upload').click()">📷 Add Photos</button>
+      </div>`;
+    }
+    return `<div class="form-group"><label>${f.label}</label><input type="text" id="field-${f.key}" value="${esc(value)}"/></div>`;
+  }).join('');
+}
+
+async function handleGalleryUpload(key, input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  showToast('Uploading ' + files.length + ' photos...', 'success');
+  window._galleryState = window._galleryState || {};
+  window._galleryState[key] = window._galleryState[key] || [];
+  for (const file of files) {
+    try {
+      const url = await uploadToCloudinary(file);
+      window._galleryState[key].push(url);
+    } catch (e) {
+      showToast('Upload failed for one image', 'error');
+    }
+  }
+  renderGalleryThumbs(key);
+  showToast('Gallery updated', 'success');
+}
+
+function removeGalleryImage(key, index) {
+  window._galleryState[key].splice(index, 1);
+  renderGalleryThumbs(key);
+}
+
+function renderGalleryThumbs(key) {
+  const container = document.getElementById('gallery-thumbs-' + key);
+  if (!container) return;
+  const arr = window._galleryState[key] || [];
+  container.innerHTML = arr.map((url, i) => `
+    <div style="position:relative;width:64px;height:64px;">
+      <img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"/>
+      <button type="button" onclick="removeGalleryImage('${key}', ${i})" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:0.7rem;cursor:pointer;">✕</button>
+    </div>
+  `).join('');
+}
+
+async function handleImageUpload(key, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('field-' + key + '-status');
+  status.textContent = 'Uploading...';
+  try {
+    const url = await uploadToCloudinary(file);
+    document.getElementById('field-' + key).value = url;
+    const preview = document.getElementById('field-' + key + '-preview');
+    preview.innerHTML = `<img src="${url}" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin-top:8px;"/>`;
+    status.textContent = '✓ Uploaded';
+  } catch (e) {
+    status.textContent = 'Upload failed';
+    showToast('Image upload failed: ' + e.message, 'error');
+  }
+}
+
+async function saveItem() {
+  if (!currentSection) return;
+  const cfg = SECTIONS[currentSection];
+  const data = {};
+  let valid = true;
+  cfg.fields.forEach(f => {
+    if (f.type === 'checkbox') {
+      const el = document.getElementById('field-' + f.key);
+      data[f.key] = el ? el.checked : false;
+      return;
+    }
+    if (f.type === 'gallery') {
+      data[f.key] = (window._galleryState && window._galleryState[f.key]) ? window._galleryState[f.key] : [];
+      return;
+    }
+    const el = document.getElementById('field-' + f.key);
+    const val = el ? el.value.trim() : '';
+    if (f.required && !val) valid = false;
+    if (f.key === 'tags' && val) {
+      data[f.key] = val.split(',').map(t => t.trim()).filter(Boolean);
+    } else {
+      data[f.key] = val;
+    }
+  });
+
+  if (!valid) {
+    showToast('Please fill required fields', 'error');
+    return;
+  }
+
+  const col = getCollectionName(currentSection);
+  try {
+    if (currentEditId) {
+      await db.collection(col).doc(currentEditId).set(data, { merge: true });
+      showToast('Updated successfully', 'success');
+    } else {
+      const id = (data.name || 'item').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now().toString(36);
+      const snap = await db.collection(col).get();
+      data.order = snap.size;
+      await db.collection(col).doc(id).set(data);
+      showToast('Added successfully', 'success');
+    }
+    closeModal();
+    loadSectionItems(currentSection);
+    refreshStats();
+  } catch (e) {
+    showToast('Error saving: ' + e.message, 'error');
+  }
+}
+
+async function deleteItem(sec, id) {
+  if (!confirm('Delete this item? This cannot be undone.')) return;
+  try {
+    await db.collection(getCollectionName(sec)).doc(id).delete();
+    showToast('Deleted', 'success');
+    loadSectionItems(sec);
+    refreshStats();
+  } catch (e) {
+    showToast('Error deleting: ' + e.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════
+// EXPORT SECTION
+// ═══════════════════════════════════════════
+async function exportSection(sec) {
+  try {
+    const snap = await db.collection(getCollectionName(sec)).get();
+    const items = [];
+    snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+    const json = JSON.stringify({ items }, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = sec + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Exported ' + sec + '.json', 'success');
+  } catch (e) {
+    showToast('Export failed: ' + e.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════
+// IMPORT FROM GITHUB
+// ═══════════════════════════════════════════
+async function importFromGitHub() {
+  const GITHUB_RAW = 'https://raw.githubusercontent.com/rakkan1l/TAP-LONDON/main/data';
+  const sections = Object.keys(SECTIONS);
+
+  showToast('Starting import from GitHub...', 'success');
+
+  for (const sec of sections) {
+    try {
+      const res = await fetch(GITHUB_RAW + '/' + sec + '.json');
+      if (!res.ok) {
+        showToast('Skipped ' + sec + ' — file not found', 'error');
+        continue;
+      }
+      const data = await res.json();
+      const items = data.items || data.venues || data || [];
+      if (!items.length) continue;
+
+      const col = getCollectionName(sec);
+      let batch = db.batch();
+      let count = 0;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const id = item.id || (item.name || 'item-' + i).toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const ref = db.collection(col).doc(id);
+        batch.set(ref, { ...item, order: i }, { merge: true });
+        count++;
+        if (count === 400) {
+          await batch.commit();
+          batch = db.batch();
+          count = 0;
+        }
+      }
+      if (count > 0) await batch.commit();
+      showToast(`Imported ${items.length} into ${sec}`, 'success');
+    } catch (e) {
+      showToast('Error importing ' + sec + ': ' + e.message, 'error');
+    }
+  }
+
+  refreshStats();
+  Object.keys(SECTIONS).forEach(sec => loadSectionItems(sec));
+}
+
+// ═══════════════════════════════════════════
+// IMAGE MANAGER (Hero + Category Cards)
+// ═══════════════════════════════════════════
+const IMAGE_SECTIONS = [
+  { id: 'hero', label: 'Homepage Hero', ratio: '16:9 (1920×1080)' },
+  { id: 'card-places', label: 'Category: Places Card', ratio: '4:3 (800×600)' },
+  { id: 'card-food', label: 'Category: Food Card', ratio: '4:3 (800×600)' },
+  { id: 'card-shopping', label: 'Category: Shopping Card', ratio: '4:3 (800×600)' },
+  { id: 'card-nightlife', label: 'Category: Nightlife Card', ratio: '4:3 (800×600)' },
+  { id: 'card-hotels', label: 'Category: Hotels Card', ratio: '4:3 (800×600)' },
+  { id: 'card-transport', label: 'Category: Transport Card', ratio: '4:3 (800×600)' },
+  { id: 'card-kids', label: 'Category: Kids Card', ratio: '4:3 (800×600)' },
+  { id: 'card-muslim', label: 'Category: Muslim Guide Card', ratio: '4:3 (800×600)' },
+  { id: 'card-emergency', label: 'Category: Emergency Card', ratio: '4:3 (800×600)' },
+];
+
+async function renderImageManager() {
+  const container = document.getElementById('image-manager-list');
+  container.innerHTML = IMAGE_SECTIONS.map(img => `
+    <div class="card">
+      <h3>${img.label}</h3>
+      <p style="font-size:0.74rem;color:var(--text3);margin-bottom:12px;">Recommended: ${img.ratio}</p>
+      <img id="img-preview-${img.id}" src="" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;margin-bottom:12px;display:none;"/>
+      <input type="text" id="img-url-${img.id}" placeholder="Paste image URL..." style="margin-bottom:10px;"/>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="file" accept="image/*" id="img-upload-${img.id}" style="display:none;" onchange="handleSiteImageUpload('${img.id}', this)"/>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('img-upload-${img.id}').click()">📷 Upload New</button>
+        <button class="btn btn-secondary btn-sm" onclick="saveSiteImageUrl('${img.id}')">🔗 Use URL</button>
+      </div>
+    </div>
+  `).join('');
+
+  for (const img of IMAGE_SECTIONS) {
+    try {
+      const doc = await db.collection('siteImages').doc(img.id).get();
+      if (doc.exists && doc.data().url) {
+        const url = doc.data().url;
+        document.getElementById('img-url-' + img.id).value = url;
+        const preview = document.getElementById('img-preview-' + img.id);
+        preview.src = url;
+        preview.style.display = 'block';
+      }
+    } catch (e) {}
+  }
+}
+
+async function handleSiteImageUpload(id, input) {
+  const file = input.files[0];
+  if (!file) return;
+  showToast('Uploading...', 'success');
+  try {
+    const url = await uploadToCloudinary(file);
+    await db.collection('siteImages').doc(id).set({ url });
+    document.getElementById('img-url-' + id).value = url;
+    const preview = document.getElementById('img-preview-' + id);
+    preview.src = url;
+    preview.style.display = 'block';
+    showToast('Image updated! Live on site now.', 'success');
+  } catch (e) {
+    showToast('Upload failed: ' + e.message, 'error');
+  }
+}
+
+async function saveSiteImageUrl(id) {
+  const url = document.getElementById('img-url-' + id).value.trim();
+  if (!url) { showToast('Please enter a URL', 'error'); return; }
+  try {
+    await db.collection('siteImages').doc(id).set({ url });
+    const preview = document.getElementById('img-preview-' + id);
+    preview.src = url;
+    preview.style.display = 'block';
+    showToast('Image URL saved! Live on site now.', 'success');
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════
+// POPUPS & OFFERS
+// ═══════════════════════════════════════════
+const POPUP_FIELDS = [
+  { key: 'enabled', label: 'Enabled (show this popup)', type: 'checkbox' },
+  { key: 'title', label: 'Title', type: 'text' },
+  { key: 'subtitle', label: 'Subtitle / Badge', type: 'text' },
+  { key: 'body', label: 'Body Text', type: 'textarea' },
+  { key: 'ctaLabel', label: 'Button Label', type: 'text' },
+  { key: 'ctaUrl', label: 'Button Link (e.g. /offers)', type: 'text' },
+  { key: 'image', label: 'Image URL', type: 'image' },
+  { key: 'expiresAt', label: 'Expires At (YYYY-MM-DD, optional)', type: 'text' },
+  { key: 'showOnce', label: 'Show Once Per Session', type: 'checkbox' },
+  { key: 'delaySeconds', label: 'Delay Before Showing (seconds)', type: 'text' },
+];
+
+async function renderPopupForm(docId, containerId) {
+  const container = document.getElementById(containerId);
+  let data = {};
+  try {
+    const doc = await db.collection('popups').doc(docId).get();
+    if (doc.exists) data = doc.data();
+  } catch (e) {}
+
+  container.innerHTML = POPUP_FIELDS.map(f => {
+    const value = data[f.key];
+    if (f.type === 'checkbox') {
+      return `<div class="form-group" style="display:flex;align-items:center;gap:10px;">
+        <input type="checkbox" id="popup-${docId}-${f.key}" ${value ? 'checked' : ''} style="width:18px;height:18px;"/>
+        <label style="margin:0;">${f.label}</label>
+      </div>`;
+    }
+    if (f.type === 'textarea') {
+      return `<div class="form-group"><label>${f.label}</label><textarea id="popup-${docId}-${f.key}">${esc(value || '')}</textarea></div>`;
+    }
+    if (f.type === 'image') {
+      return `<div class="form-group">
+        <label>${f.label}</label>
+        <input type="text" id="popup-${docId}-${f.key}" value="${esc(value || '')}" placeholder="https://..."/>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <input type="file" accept="image/*" id="popup-${docId}-${f.key}-upload" style="display:none;" onchange="handlePopupImageUpload('${docId}','${f.key}', this)"/>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('popup-${docId}-${f.key}-upload').click()">📷 Upload</button>
+        </div>
+      </div>`;
+    }
+    return `<div class="form-group"><label>${f.label}</label><input type="text" id="popup-${docId}-${f.key}" value="${esc(value || '')}"/></div>`;
+  }).join('') + `<button class="btn btn-primary" onclick="savePopup('${docId}')" style="margin-top:8px;">Save Popup</button>`;
+}
+
+async function handlePopupImageUpload(docId, key, input) {
+  const file = input.files[0];
+  if (!file) return;
+  try {
+    const url = await uploadToCloudinary(file);
+    document.getElementById(`popup-${docId}-${key}`).value = url;
+    showToast('Image uploaded', 'success');
+  } catch (e) {
+    showToast('Upload failed', 'error');
+  }
+}
+
+async function savePopup(docId) {
+  const data = {};
+  POPUP_FIELDS.forEach(f => {
+    const el = document.getElementById(`popup-${docId}-${f.key}`);
+    if (!el) return;
+    if (f.type === 'checkbox') data[f.key] = el.checked;
+    else data[f.key] = el.value.trim();
+  });
+  try {
+    await db.collection('popups').doc(docId).set(data, { merge: true });
+    showToast('Popup saved! Live on site now.', 'success');
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+function loadPopupForm(section) {
+  const container = document.getElementById('popup-form-section');
+  if (!section) { container.innerHTML = ''; return; }
+  renderPopupForm(section, 'popup-form-section');
+}
+
+function initPopupsPage() {
+  renderPopupForm('global', 'popup-form-global');
+}
+</script>
+
+</body>
+</html>
