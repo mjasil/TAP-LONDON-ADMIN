@@ -447,10 +447,14 @@ const SECTIONS = {
       { key: 'name', label: 'Name', type: 'text', required: true },
       { key: 'section', label: 'Category', type: 'select', optionsFrom: 'cats' },
       { key: 'type', label: 'Type', type: 'text' },
-      { key: 'location', label: 'Location', type: 'text' },
+      { key: 'location', label: 'Location / Area', type: 'text' },
       { key: 'openingHours', label: 'Opening Hours', type: 'text' },
+      { key: 'nearestStation', label: 'Nearest Station', type: 'text' },
       { key: 'description', label: 'Description', type: 'textarea' },
-      { key: 'image', label: 'Image URL', type: 'image' },
+      { key: 'highlights', label: 'Key Shops (comma separated)', type: 'text' },
+      { key: 'image', label: 'Main Image URL', type: 'image' },
+      { key: 'gallery', label: 'Gallery (additional photos)', type: 'gallery' },
+      { key: 'subShops', label: 'Sub Shops (JSON array)', type: 'subshops' },
       { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
     ]
   },
@@ -807,6 +811,28 @@ function renderModalFields(cfg, item) {
         <label style="margin:0;">${f.label}</label>
       </div>`;
     }
+    if (f.type === 'subshops') {
+      // Render sub-shops manager
+      const shops = Array.isArray(value) ? value : [];
+      window._subShopsState = window._subShopsState || {};
+      window._subShopsState['subShops'] = JSON.parse(JSON.stringify(shops));
+      return `<div class="form-group">
+        <label>${f.label}</label>
+        <div id="subshops-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+          ${shops.map((s, i) => `
+            <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;border:1px solid rgba(255,255,255,0.08);">
+              <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+                <input type="text" placeholder="Shop name" value="${esc(s.name||'')}" oninput="updateSubShop(${i},'name',this.value)" style="flex:1;"/>
+                <button type="button" onclick="removeSubShop(${i})" style="background:rgba(229,85,85,0.15);color:#e55;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;">✕</button>
+              </div>
+              <input type="text" placeholder="Type (e.g. Fashion, Department Store)" value="${esc(s.type||'')}" oninput="updateSubShop(${i},'type',this.value)" style="width:100%;margin-bottom:6px;"/>
+              <input type="text" placeholder="Note / description" value="${esc(s.note||'')}" oninput="updateSubShop(${i},'note',this.value)" style="width:100%;"/>
+            </div>
+          `).join('')}
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="addSubShop()">+ Add Shop</button>
+      </div>`;
+    }
     if (f.type === 'gallery') {
       const galleryArr = Array.isArray(value) ? value : [];
       window._galleryState = window._galleryState || {};
@@ -894,6 +920,10 @@ async function saveItem() {
     }
     if (f.type === 'gallery') {
       data[f.key] = (window._galleryState && window._galleryState[f.key]) ? window._galleryState[f.key] : [];
+      return;
+    }
+    if (f.type === 'subshops') {
+      data[f.key] = (window._subShopsState && window._subShopsState[f.key]) ? window._subShopsState[f.key] : [];
       return;
     }
     const el = document.getElementById('field-' + f.key);
@@ -1173,6 +1203,45 @@ function loadPopupForm(section) {
 
 function initPopupsPage() {
   renderPopupForm('global', 'popup-form-global');
+}
+
+// ═══════════════════════════════════════════
+// SUBSHOPS MANAGER
+// ═══════════════════════════════════════════
+function addSubShop() {
+  window._subShopsState = window._subShopsState || {};
+  window._subShopsState['subShops'] = window._subShopsState['subShops'] || [];
+  window._subShopsState['subShops'].push({ name: '', type: '', note: '' });
+  rerenderSubShops();
+}
+
+function removeSubShop(index) {
+  window._subShopsState['subShops'].splice(index, 1);
+  rerenderSubShops();
+}
+
+function updateSubShop(index, field, value) {
+  window._subShopsState = window._subShopsState || {};
+  window._subShopsState['subShops'] = window._subShopsState['subShops'] || [];
+  if (window._subShopsState['subShops'][index]) {
+    window._subShopsState['subShops'][index][field] = value;
+  }
+}
+
+function rerenderSubShops() {
+  const list = document.getElementById('subshops-list');
+  if (!list) return;
+  const shops = (window._subShopsState || {})['subShops'] || [];
+  list.innerHTML = shops.map((s, i) => `
+    <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;border:1px solid rgba(255,255,255,0.08);">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+        <input type="text" placeholder="Shop name" value="${esc(s.name||'')}" oninput="updateSubShop(${i},'name',this.value)" style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#fff;font-family:inherit;"/>
+        <button type="button" onclick="removeSubShop(${i})" style="background:rgba(229,85,85,0.15);color:#e55;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;">✕</button>
+      </div>
+      <input type="text" placeholder="Type (e.g. Fashion)" value="${esc(s.type||'')}" oninput="updateSubShop(${i},'type',this.value)" style="width:100%;margin-bottom:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#fff;font-family:inherit;box-sizing:border-box;"/>
+      <input type="text" placeholder="Note / description" value="${esc(s.note||'')}" oninput="updateSubShop(${i},'note',this.value)" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#fff;font-family:inherit;box-sizing:border-box;"/>
+    </div>
+  `).join('');
 }
 </script>
 
