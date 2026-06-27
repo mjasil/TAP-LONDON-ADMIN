@@ -186,6 +186,7 @@
       <div class="nav-item" data-page="places" onclick="showPage('places')"><span class="nav-icon">🏛️</span><span>Places</span></div>
       <div class="nav-item" data-page="food" onclick="showPage('food')"><span class="nav-icon">🍽️</span><span>Food</span></div>
       <div class="nav-item" data-page="shopping" onclick="showPage('shopping')"><span class="nav-icon">🛍️</span><span>Shopping</span></div>
+      <div class="nav-item" data-page="subshops" onclick="showPage('subshops')"><span class="nav-icon">🏪</span><span>Sub Shops</span></div>
       <div class="nav-item" data-page="nightlife" onclick="showPage('nightlife')"><span class="nav-icon">🌙</span><span>Nightlife</span></div>
       <div class="nav-item" data-page="kids" onclick="showPage('kids')"><span class="nav-icon">👨‍👩‍👧</span><span>Kids &amp; Family</span></div>
       <div class="nav-item" data-page="muslim" onclick="showPage('muslim')"><span class="nav-icon">🕌</span><span>Muslim Guide</span></div>
@@ -244,6 +245,7 @@
         <div id="page-places" class="page"></div>
         <div id="page-food" class="page"></div>
         <div id="page-shopping" class="page"></div>
+        <div id="page-subshops" class="page"></div>
         <div id="page-nightlife" class="page"></div>
         <div id="page-kids" class="page"></div>
         <div id="page-muslim" class="page"></div>
@@ -617,7 +619,7 @@ function showPage(id) {
   if (navEl) navEl.classList.add('active');
 
   const labels = Object.assign(
-    { dashboard: 'Dashboard', images: 'Image Manager', settings: 'Settings', popups: 'Popups & Offers' },
+    { dashboard: 'Dashboard', images: 'Image Manager', settings: 'Settings', popups: 'Popups & Offers', subshops: 'Sub Shops Manager' },
     Object.fromEntries(Object.entries(SECTIONS).map(([k, v]) => [k, v.label]))
   );
   document.getElementById('topbar-title').textContent = labels[id] || id;
@@ -625,6 +627,7 @@ function showPage(id) {
 
   if (SECTIONS[id]) loadSectionItems(id);
   if (id === 'popups') initPopupsPage();
+  if (id === 'subshops') initSubShopsPage();
 }
 
 // ═══════════════════════════════════════════
@@ -1242,6 +1245,149 @@ function rerenderSubShops() {
       <input type="text" placeholder="Note / description" value="${esc(s.note||'')}" oninput="updateSubShop(${i},'note',this.value)" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;color:#fff;font-family:inherit;box-sizing:border-box;"/>
     </div>
   `).join('');
+}
+
+
+// SUB SHOPS MANAGER
+var currentSubShopLocation = null;
+var currentSubShops = [];
+
+var SHOPPING_LOCS = [
+  {id:'oxford-street',label:'Oxford Street'},
+  {id:'carnaby-street',label:'Carnaby Street'},
+  {id:'kings-road',label:"King's Road"},
+  {id:'covent-garden-shopping',label:'Covent Garden'},
+  {id:'westfield-stratford',label:'Westfield Stratford'},
+  {id:'canary-wharf',label:'Canary Wharf'},
+  {id:'camden-market',label:'Camden Market'},
+  {id:'portobello-road-area',label:'Portobello Road'},
+  {id:'harrods',label:'Harrods'},
+  {id:'liberty',label:'Liberty London'},
+  {id:'fortnum-mason',label:'Fortnum & Mason'},
+  {id:'spitalfields-market',label:'Spitalfields Market'},
+  {id:'borough-market-shopping',label:'Borough Market'},
+  {id:'brick-lane-market',label:'Brick Lane Market'},
+  {id:'greenwich-market',label:'Greenwich Market'},
+];
+
+function initSubShopsPage() {
+  var container = document.getElementById('page-subshops');
+  if (!container) return;
+  var opts = SHOPPING_LOCS.map(function(l) {
+    return '<option value="' + l.id + '">' + l.label + '</option>';
+  }).join('');
+  container.innerHTML =
+    '<div class="section-header"><div class="section-title"><h2>🏪 Sub Shops Manager</h2>' +
+    '<p>Manage individual shops inside each shopping location</p></div></div>' +
+    '<div class="card"><h3>Select Location</h3>' +
+    '<select id="subshop-loc-sel" onchange="loadSubShops(this.value)" style="margin-bottom:0;">' +
+    '<option value="">— Choose a Shopping Location —</option>' + opts + '</select></div>' +
+    '<div id="subshop-editor" style="display:none;">' +
+    '<div class="card">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
+    '<h3 id="subshop-title">Shops</h3>' +
+    '<button class="btn btn-primary btn-sm" onclick="addSubShop()">+ Add Shop</button></div>' +
+    '<div id="subshop-list"></div>' +
+    '<button class="btn btn-primary" onclick="saveSubShops()" style="margin-top:16px;width:100%;">💾 Save All Shops to Firebase</button>' +
+    '</div></div>';
+}
+
+async function loadSubShops(locId) {
+  if (!locId) return;
+  currentSubShopLocation = locId;
+  var label = '';
+  SHOPPING_LOCS.forEach(function(l) { if (l.id === locId) label = l.label; });
+  document.getElementById('subshop-title').textContent = label + ' — Shops';
+  document.getElementById('subshop-editor').style.display = 'block';
+  try {
+    var snap = await db.collection('shopping').doc(locId).get();
+    var data = snap.exists ? snap.data() : {};
+    currentSubShops = Array.isArray(data.subShops) ? JSON.parse(JSON.stringify(data.subShops)) : [];
+  } catch(e) { currentSubShops = []; }
+  renderSubShops();
+}
+
+function renderSubShops() {
+  var list = document.getElementById('subshop-list');
+  if (!list) return;
+  if (!currentSubShops.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🏪</div>No shops yet. Click &quot;+ Add Shop&quot; above.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  currentSubShops.forEach(function(shop, i) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;margin-bottom:12px;';
+    var headerDiv = document.createElement('div');
+    headerDiv.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;';
+    headerDiv.innerHTML = '<strong style="color:var(--gold);">Shop #' + (i+1) + ' — ' + (shop.name || 'Unnamed') + '</strong>';
+    var delBtn = document.createElement('button');
+    delBtn.className = 'icon-btn danger';
+    delBtn.textContent = '🗑️';
+    delBtn.onclick = (function(idx) { return function() { removeSubShop(idx); }; })(i);
+    headerDiv.appendChild(delBtn);
+    wrap.appendChild(headerDiv);
+
+    var fields = [
+      {key:'name', label:'Shop Name', placeholder:'e.g. Zara, H&M, Selfridges'},
+      {key:'type', label:'Type / Category', placeholder:'e.g. Fashion, Department Store, Beauty'},
+      {key:'note', label:'Description', placeholder:'Short description of what this shop sells'},
+      {key:'openingHours', label:'Opening Hours', placeholder:'e.g. Mon-Sat 10:00-21:00, Sun 12:00-18:00'},
+      {key:'image', label:'Image URL', placeholder:'https://images.unsplash.com/...'},
+      {key:'mapsUrl', label:'Google Maps URL', placeholder:'https://www.google.com/maps/search/?api=1&query=...'},
+    ];
+
+    fields.forEach(function(fd) {
+      var fg = document.createElement('div');
+      fg.className = 'form-group';
+      var lbl = document.createElement('label');
+      lbl.textContent = fd.label;
+      var inp = document.createElement('input');
+      inp.type = 'text';
+      inp.value = shop[fd.key] || '';
+      inp.placeholder = fd.placeholder;
+      (function(shopIdx, fieldKey) {
+        inp.oninput = function() { currentSubShops[shopIdx][fieldKey] = this.value; };
+      })(i, fd.key);
+      fg.appendChild(lbl);
+      fg.appendChild(inp);
+      if (fd.key === 'image' && shop.image) {
+        var img = document.createElement('img');
+        img.src = shop.image;
+        img.style.cssText = 'width:100%;max-height:120px;object-fit:cover;border-radius:8px;margin-top:6px;';
+        img.onerror = function() { this.style.display='none'; };
+        fg.appendChild(img);
+      }
+      wrap.appendChild(fg);
+    });
+    list.appendChild(wrap);
+  });
+}
+
+function addSubShop() {
+  currentSubShops.push({name:'',type:'',note:'',openingHours:'',image:'',mapsUrl:''});
+  renderSubShops();
+  setTimeout(function() {
+    var list = document.getElementById('subshop-list');
+    if (list && list.lastElementChild) list.lastElementChild.scrollIntoView({behavior:'smooth'});
+  }, 100);
+}
+
+function removeSubShop(i) {
+  if (!confirm('Remove this shop?')) return;
+  currentSubShops.splice(i, 1);
+  renderSubShops();
+}
+
+async function saveSubShops() {
+  if (!currentSubShopLocation) { showToast('Select a location first','error'); return; }
+  var cleaned = currentSubShops.filter(function(s) { return s.name && s.name.trim(); });
+  try {
+    await db.collection('shopping').doc(currentSubShopLocation).set({subShops: cleaned},{merge:true});
+    showToast('Saved! Sub shops now live on website.','success');
+    currentSubShops = cleaned;
+    renderSubShops();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
 }
 </script>
 
