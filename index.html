@@ -198,6 +198,7 @@
       <div class="nav-item" data-page="trending" onclick="showPage('trending')"><span class="nav-icon">🔥</span><span>Trending</span></div>
       <div class="nav-item" data-page="sports" onclick="showPage('sports')"><span class="nav-icon">⚽</span><span>Sports</span></div>
       <div class="nav-item" data-page="guides" onclick="showPage('guides')"><span class="nav-icon">📖</span><span>Guides</span></div>
+      <div class="nav-item" data-page="events" onclick="showPage('events')"><span class="nav-icon">📅</span><span>Events Today</span></div>
       <div class="nav-section">Tools</div>
       <div class="nav-item" data-page="popups" onclick="showPage('popups')"><span class="nav-icon">📢</span><span>Popups &amp; Offers</span></div>
       <div class="nav-item" data-page="images" onclick="showPage('images')"><span class="nav-icon">🖼️</span><span>Image Manager</span></div>
@@ -257,6 +258,7 @@
         <div id="page-trending" class="page"></div>
         <div id="page-sports" class="page"></div>
         <div id="page-guides" class="page"></div>
+        <div id="page-events" class="page"></div>
 
         <!-- POPUPS & OFFERS -->
         <div id="page-popups" class="page">
@@ -613,6 +615,23 @@ const SECTIONS = {
       { key: 'image', label: 'Cover Image URL', type: 'image' },
     ]
   },
+  events: {
+    label: 'Events Today', icon: '📅',
+    cats: ['Free Events', 'Food Markets', 'Markets', 'Live Music', 'Nightlife', 'Pop-ups'],
+    fields: [
+      { key: 'name', label: 'Event Name', type: 'text', required: true },
+      { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
+      { key: 'area', label: 'Area', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'startDate', label: 'Start Date (YYYY-MM-DD)', type: 'text' },
+      { key: 'endDate', label: 'End Date (YYYY-MM-DD)', type: 'text' },
+      { key: 'recurring', label: 'Recurring (e.g. "Every Sat-Sun")', type: 'text' },
+      { key: 'time', label: 'Time (e.g. 10:00–17:00)', type: 'text' },
+      { key: 'price', label: 'Price', type: 'text' },
+      { key: 'image', label: 'Image URL', type: 'image' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
 };
 
 let currentSection = null;
@@ -640,7 +659,7 @@ function showPage(id) {
   if (navEl) navEl.classList.add('active');
 
   const labels = Object.assign(
-    { dashboard: 'Dashboard', images: 'Image Manager', settings: 'Settings', popups: 'Popups & Offers', subshops: 'Sub Shops Manager', guides: 'Guides' },
+    { dashboard: 'Dashboard', images: 'Image Manager', settings: 'Settings', popups: 'Popups & Offers', subshops: 'Sub Shops Manager', guides: 'Guides', events: 'Events Today' },
     Object.fromEntries(Object.entries(SECTIONS).map(([k, v]) => [k, v.label]))
   );
   document.getElementById('topbar-title').textContent = labels[id] || id;
