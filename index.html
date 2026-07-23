@@ -197,6 +197,7 @@
       <div class="nav-item" data-page="hidden-gems" onclick="showPage('hidden-gems')"><span class="nav-icon">💎</span><span>Hidden Gems</span></div>
       <div class="nav-item" data-page="trending" onclick="showPage('trending')"><span class="nav-icon">🔥</span><span>Trending</span></div>
       <div class="nav-item" data-page="sports" onclick="showPage('sports')"><span class="nav-icon">⚽</span><span>Sports</span></div>
+      <div class="nav-item" data-page="guides" onclick="showPage('guides')"><span class="nav-icon">📖</span><span>Guides</span></div>
       <div class="nav-section">Tools</div>
       <div class="nav-item" data-page="popups" onclick="showPage('popups')"><span class="nav-icon">📢</span><span>Popups &amp; Offers</span></div>
       <div class="nav-item" data-page="images" onclick="showPage('images')"><span class="nav-icon">🖼️</span><span>Image Manager</span></div>
@@ -255,6 +256,7 @@
         <div id="page-hidden-gems" class="page"></div>
         <div id="page-trending" class="page"></div>
         <div id="page-sports" class="page"></div>
+        <div id="page-guides" class="page"></div>
 
         <!-- POPUPS & OFFERS -->
         <div id="page-popups" class="page">
@@ -592,6 +594,18 @@ const SECTIONS = {
       { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
     ]
   },
+  guides: {
+    label: 'Guides', icon: '📖',
+    cats: ['Weekly Picks', 'Romance', 'Indoor', 'Budget', 'Free', 'Photo Spots', 'Seasonal'],
+    fields: [
+      { key: 'name', label: 'Guide Title', type: 'text', required: true },
+      { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
+      { key: 'icon', label: 'Icon (emoji)', type: 'text' },
+      { key: 'description', label: 'Short Description', type: 'textarea' },
+      { key: 'content', label: 'List Items (one per line: "Title — description")', type: 'textarea' },
+      { key: 'image', label: 'Cover Image URL', type: 'image' },
+    ]
+  },
 };
 
 let currentSection = null;
@@ -619,7 +633,7 @@ function showPage(id) {
   if (navEl) navEl.classList.add('active');
 
   const labels = Object.assign(
-    { dashboard: 'Dashboard', images: 'Image Manager', settings: 'Settings', popups: 'Popups & Offers', subshops: 'Sub Shops Manager' },
+    { dashboard: 'Dashboard', images: 'Image Manager', settings: 'Settings', popups: 'Popups & Offers', subshops: 'Sub Shops Manager', guides: 'Guides' },
     Object.fromEntries(Object.entries(SECTIONS).map(([k, v]) => [k, v.label]))
   );
   document.getElementById('topbar-title').textContent = labels[id] || id;
