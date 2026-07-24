@@ -760,19 +760,79 @@ function renderItemList(sec, items) {
     list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div>No items yet. Click "+ Add" to create one.</div>`;
     return;
   }
-  list.innerHTML = items.map(item => `
+  list.innerHTML = items.map((item, i) => `
     <div class="item-row">
       <img class="item-thumb" src="${item.image || ''}" onerror="this.style.opacity=0.2" alt=""/>
       <div class="item-info">
         <div class="item-name">${esc(item.name || 'Untitled')}</div>
         <div class="item-meta">${esc(item.category || item.section || item.sport || '')}${item.area ? ' · ' + esc(item.area) : ''}</div>
       </div>
-      <div class="item-actions">
+      <div class="item-actions" style="position:relative;">
         <button class="icon-btn" onclick="openEditModal('${sec}','${item.id}')" title="Edit">✏️</button>
-        <button class="icon-btn danger" onclick="deleteItem('${sec}','${item.id}')" title="Delete">🗑️</button>
+        <button class="icon-btn" onclick="toggleItemMenu(event, '${sec}', '${item.id}')" title="More">⋮</button>
+        <div class="item-menu" id="menu-${sec}-${item.id}" style="display:none;position:absolute;top:36px;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:50;min-width:160px;overflow:hidden;">
+          <button class="menu-item" onclick="moveItem('${sec}','${item.id}',-1)" ${i === 0 ? 'disabled' : ''} style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;color:var(--text);font-size:0.82rem;cursor:pointer;text-align:left;${i===0?'opacity:0.35;cursor:not-allowed;':''}">⬆️ Move Up</button>
+          <button class="menu-item" onclick="moveItem('${sec}','${item.id}',1)" ${i === items.length-1 ? 'disabled' : ''} style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;color:var(--text);font-size:0.82rem;cursor:pointer;text-align:left;${i===items.length-1?'opacity:0.35;cursor:not-allowed;':''}">⬇️ Move Down</button>
+          <button class="menu-item" onclick="moveItemToTop('${sec}','${item.id}')" style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;color:var(--text);font-size:0.82rem;cursor:pointer;text-align:left;">⏫ Move to Top</button>
+          <button class="menu-item" onclick="deleteItem('${sec}','${item.id}');closeAllItemMenus();" style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;color:var(--red);font-size:0.82rem;cursor:pointer;text-align:left;border-top:1px solid var(--border);">🗑️ Delete</button>
+        </div>
       </div>
     </div>
   `).join('');
+}
+
+function toggleItemMenu(evt, sec, id) {
+  evt.stopPropagation();
+  const menu = document.getElementById(`menu-${sec}-${id}`);
+  const wasOpen = menu.style.display === 'block';
+  closeAllItemMenus();
+  if (!wasOpen) menu.style.display = 'block';
+}
+
+function closeAllItemMenus() {
+  document.querySelectorAll('.item-menu').forEach(m => m.style.display = 'none');
+}
+
+document.addEventListener('click', closeAllItemMenus);
+
+async function moveItem(sec, id, direction) {
+  closeAllItemMenus();
+  const items = sectionItemsCache[sec] || [];
+  const idx = items.findIndex(i => i.id === id);
+  const swapIdx = idx + direction;
+  if (idx === -1 || swapIdx < 0 || swapIdx >= items.length) return;
+
+  const col = getCollectionName(sec);
+  const a = items[idx], b = items[swapIdx];
+  const aOrder = a.order ?? idx;
+  const bOrder = b.order ?? swapIdx;
+
+  try {
+    const batch = db.batch();
+    batch.update(db.collection(col).doc(a.id), { order: bOrder });
+    batch.update(db.collection(col).doc(b.id), { order: aOrder });
+    await batch.commit();
+    showToast('Order updated', 'success');
+    loadSectionItems(sec);
+  } catch(e) {
+    showToast('Error reordering: ' + e.message, 'error');
+  }
+}
+
+async function moveItemToTop(sec, id) {
+  closeAllItemMenus();
+  const items = sectionItemsCache[sec] || [];
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  const col = getCollectionName(sec);
+  const minOrder = Math.min(...items.map(i => i.order ?? 999)) - 1;
+  try {
+    await db.collection(col).doc(item.id).update({ order: minOrder });
+    showToast('Moved to top', 'success');
+    loadSectionItems(sec);
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
 }
 
 function filterList(sec, query) {
