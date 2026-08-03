@@ -904,6 +904,7 @@ function renderModalFields(cfg, item) {
         <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
           <input type="file" accept="image/*" id="field-${f.key}-upload" style="display:none;" onchange="handleImageUpload('${f.key}', this)"/>
           <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('field-${f.key}-upload').click()">📷 Upload</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="clearImageField('${f.key}')">✕ Remove</button>
           <span id="field-${f.key}-status" style="font-size:0.75rem;color:var(--text3);"></span>
         </div>
         ${value ? `<img src="${esc(value)}" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin-top:8px;" id="field-${f.key}-preview"/>` : `<div id="field-${f.key}-preview"></div>`}
@@ -992,6 +993,15 @@ function renderGalleryThumbs(key) {
       <button type="button" onclick="removeGalleryImage('${key}', ${i})" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:0.7rem;cursor:pointer;">✕</button>
     </div>
   `).join('');
+}
+
+function clearImageField(key) {
+  const input = document.getElementById('field-' + key);
+  if (input) input.value = '';
+  const preview = document.getElementById('field-' + key + '-preview');
+  if (preview) preview.innerHTML = '';
+  const status = document.getElementById('field-' + key + '-status');
+  if (status) status.textContent = 'Removed';
 }
 
 async function handleImageUpload(key, input) {
