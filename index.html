@@ -997,17 +997,29 @@ function renderGalleryThumbs(key) {
 
 function clearImageField(key) {
   const input = document.getElementById('field-' + key);
-  if (input) input.value = '';
   const preview = document.getElementById('field-' + key + '-preview');
-  if (preview) {
-    // The preview element is sometimes the <img> itself (when an image exists),
-    // sometimes an empty <div> (when it doesn't). Replace it with a fresh empty div either way.
-    const emptyDiv = document.createElement('div');
-    emptyDiv.id = 'field-' + key + '-preview';
-    preview.replaceWith(emptyDiv);
-  }
   const status = document.getElementById('field-' + key + '-status');
-  if (status) status.textContent = 'Removed';
+
+  // If clearing the MAIN image, instantly fall back to the first gallery photo (if any) —
+  // matches the live website behaviour, shown here immediately without needing to save.
+  let fallbackUrl = '';
+  if (key === 'image' && window._galleryState && window._galleryState['gallery'] && window._galleryState['gallery'].length > 0) {
+    fallbackUrl = window._galleryState['gallery'][0];
+  }
+
+  if (input) input.value = fallbackUrl;
+
+  if (preview) {
+    const replacement = document.createElement(fallbackUrl ? 'img' : 'div');
+    replacement.id = 'field-' + key + '-preview';
+    if (fallbackUrl) {
+      replacement.src = fallbackUrl;
+      replacement.style.cssText = 'width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin-top:8px;';
+    }
+    preview.replaceWith(replacement);
+  }
+
+  if (status) status.textContent = fallbackUrl ? '✓ Using first gallery photo as main image' : 'Removed';
 }
 
 async function handleImageUpload(key, input) {
