@@ -999,7 +999,13 @@ function clearImageField(key) {
   const input = document.getElementById('field-' + key);
   if (input) input.value = '';
   const preview = document.getElementById('field-' + key + '-preview');
-  if (preview) preview.innerHTML = '';
+  if (preview) {
+    // The preview element is sometimes the <img> itself (when an image exists),
+    // sometimes an empty <div> (when it doesn't). Replace it with a fresh empty div either way.
+    const emptyDiv = document.createElement('div');
+    emptyDiv.id = 'field-' + key + '-preview';
+    preview.replaceWith(emptyDiv);
+  }
   const status = document.getElementById('field-' + key + '-status');
   if (status) status.textContent = 'Removed';
 }
