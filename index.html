@@ -201,6 +201,7 @@
       <div class="nav-item" data-page="events" onclick="showPage('events')"><span class="nav-icon">📅</span><span>Events Today</span></div>
       <div class="nav-section">Tools</div>
       <div class="nav-item" data-page="popups" onclick="showPage('popups')"><span class="nav-icon">📢</span><span>Popups &amp; Offers</span></div>
+      <div class="nav-item" data-page="analytics" onclick="showPage('analytics')"><span class="nav-icon">📊</span><span>Analytics</span></div>
       <div class="nav-item" data-page="images" onclick="showPage('images')"><span class="nav-icon">🖼️</span><span>Image Manager</span></div>
       <div class="nav-item" data-page="settings" onclick="showPage('settings')"><span class="nav-icon">⚙️</span><span>Settings</span></div>
     </div>
@@ -288,6 +289,7 @@
         </div>
 
         <!-- IMAGE MANAGER -->
+        <div id="page-analytics" class="page"></div>
         <div id="page-images" class="page">
           <div class="section-header">
             <div class="section-title"><h2>🖼️ Image Manager</h2><p>Homepage hero and category card images</p></div>
@@ -660,7 +662,7 @@ function showPage(id) {
   if (navEl) navEl.classList.add('active');
 
   const labels = Object.assign(
-    { dashboard: 'Dashboard', images: 'Image Manager', settings: 'Settings', popups: 'Popups & Offers', subshops: 'Sub Shops Manager', guides: 'Guides', events: 'Events Today' },
+    { dashboard: 'Dashboard', images: 'Image Manager', settings: 'Settings', popups: 'Popups & Offers', subshops: 'Sub Shops Manager', guides: 'Guides', events: 'Events Today', analytics: 'Analytics' },
     Object.fromEntries(Object.entries(SECTIONS).map(([k, v]) => [k, v.label]))
   );
   document.getElementById('topbar-title').textContent = labels[id] || id;
@@ -669,6 +671,7 @@ function showPage(id) {
   if (SECTIONS[id]) loadSectionItems(id);
   if (id === 'popups') initPopupsPage();
   if (id === 'subshops') initSubShopsPage();
+  if (id === 'analytics') initAnalyticsPage();
 }
 
 // ═══════════════════════════════════════════
@@ -1479,6 +1482,103 @@ async function saveSubShops() {
     renderSubShops();
   } catch(e) { showToast('Error: '+e.message,'error'); }
 }
+
+
+// ═══════════════════════════════════════════
+// ANALYTICS PAGE
+// ═══════════════════════════════════════════
+async function initAnalyticsPage() {
+  const container = document.getElementById('page-analytics');
+  if (!container) return;
+  container.innerHTML = `
+    <div class="section-header">
+      <div class="section-title"><h2>📊 Analytics</h2><p>Website visitor stats</p></div>
+      <button class="btn btn-secondary btn-sm" onclick="initAnalyticsPage()">↻ Refresh</button>
+    </div>
+    <div class="stats-grid" id="analytics-summary" style="margin-bottom:24px;">
+      <div class="stat-card"><div class="stat-num">—</div><div class="stat-label">Loading...</div></div>
+    </div>
+    <div class="card">
+      <h3>📅 Last 7 Days</h3>
+      <div id="analytics-daily"></div>
+    </div>
+    <div class="card">
+      <h3>🔥 Top Pages</h3>
+      <div id="analytics-pages"></div>
+    </div>
+  `;
+
+  try {
+    // Total all-time visits
+    const totalDoc = await db.collection('analyticsTotal').doc('all').get();
+    const totalVisits = totalDoc.exists ? (totalDoc.data().count || 0) : 0;
+
+    // Today's visits
+    const todayId = new Date().toISOString().slice(0, 10);
+    const todayDoc = await db.collection('analyticsDaily').doc(todayId).get();
+    const todayVisits = todayDoc.exists ? (todayDoc.data().count || 0) : 0;
+
+    // Last 7 days
+    const dailySnap = await db.collection('analyticsDaily').get();
+    const dailyData = [];
+    dailySnap.forEach(doc => dailyData.push({ date: doc.id, count: doc.data().count || 0 }));
+    dailyData.sort((a, b) => b.date.localeCompare(a.date));
+    const last7 = dailyData.slice(0, 7);
+    const weekTotal = last7.reduce((sum, d) => sum + d.count, 0);
+
+    // Top pages
+    const pagesSnap = await db.collection('analyticsPages').get();
+    const pagesData = [];
+    pagesSnap.forEach(doc => pagesData.push({ page: doc.id, count: doc.data().count || 0 }));
+    pagesData.sort((a, b) => b.count - a.count);
+    const topPages = pagesData.slice(0, 10);
+
+    // Render summary cards
+    document.getElementById('analytics-summary').innerHTML = `
+      <div class="stat-card"><div class="stat-num">${totalVisits}</div><div class="stat-label">Total Visits</div></div>
+      <div class="stat-card"><div class="stat-num">${todayVisits}</div><div class="stat-label">Today</div></div>
+      <div class="stat-card"><div class="stat-num">${weekTotal}</div><div class="stat-label">Last 7 Days</div></div>
+      <div class="stat-card"><div class="stat-num">${pagesData.length}</div><div class="stat-label">Pages Tracked</div></div>
+    `;
+
+    // Render daily breakdown
+    const dailyEl = document.getElementById('analytics-daily');
+    if (!last7.length) {
+      dailyEl.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div>No visit data yet.</div>';
+    } else {
+      const maxCount = Math.max(...last7.map(d => d.count), 1);
+      dailyEl.innerHTML = last7.map(d => `
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
+          <div style="width:90px;font-size:0.78rem;color:var(--text2);flex-shrink:0;">${d.date}</div>
+          <div style="flex:1;background:rgba(201,168,76,0.1);border-radius:6px;overflow:hidden;height:20px;">
+            <div style="width:${Math.max((d.count / maxCount) * 100, 4)}%;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light));"></div>
+          </div>
+          <div style="width:40px;text-align:right;font-weight:700;color:var(--gold);font-size:0.82rem;">${d.count}</div>
+        </div>
+      `).join('');
+    }
+
+    // Render top pages
+    const pagesEl = document.getElementById('analytics-pages');
+    if (!topPages.length) {
+      pagesEl.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div>No page data yet.</div>';
+    } else {
+      pagesEl.innerHTML = topPages.map((p, i) => {
+        const displayPath = p.page === 'home' ? '/ (Homepage)' : '/' + p.page.replace(/__/g, '/');
+        return `
+          <div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);">
+            <div style="width:22px;color:var(--text3);font-size:0.76rem;flex-shrink:0;">${i + 1}</div>
+            <div style="flex:1;font-size:0.84rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${displayPath}</div>
+            <div style="font-weight:700;color:var(--gold);font-size:0.84rem;">${p.count}</div>
+          </div>
+        `;
+      }).join('');
+    }
+  } catch (e) {
+    document.getElementById('analytics-summary').innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div>Error loading analytics: ${e.message}</div>`;
+  }
+}
+
 </script>
 
 </body>
