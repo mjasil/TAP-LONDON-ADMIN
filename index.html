@@ -1059,6 +1059,14 @@ async function saveItem() {
     }
     const el = document.getElementById('field-' + f.key);
     const val = el ? el.value.trim() : '';
+    // Guard against accidentally wiping the main image: if this is the image
+    // field, it's empty, and we're editing an existing item (not creating new),
+    // skip writing it entirely instead of overwriting a possibly-fine existing
+    // image with blank. This was the cause of "image reverts after any edit" -
+    // an empty image input at save time was silently blanking the saved photo.
+    if (f.key === 'image' && !val && currentEditId) {
+      return;
+    }
     if (f.required && !val) valid = false;
     if (f.key === 'tags' && val) {
       data[f.key] = val.split(',').map(t => t.trim()).filter(Boolean);
