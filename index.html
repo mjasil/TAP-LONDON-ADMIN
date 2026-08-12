@@ -1141,7 +1141,23 @@ async function importFromGitHub() {
   const GITHUB_RAW = 'https://raw.githubusercontent.com/rakkan1l/TAP-LONDON/main/data';
   const sections = Object.keys(SECTIONS);
 
+  // Confirm before running - this used to silently overwrite manually-edited
+  // images and content on every existing item with whatever's in the GitHub
+  // JSON seed files. That was the cause of edited images reverting back to
+  // old stock photos. Now it only ADDS new items and fills in missing fields
+  // on existing ones - it never overwrites image/gallery/description on an
+  // item that's already in Firestore, since those are the fields people edit
+  // by hand in this panel.
+  const confirmed = confirm(
+    'Import will ADD any new items from GitHub and fill in missing fields on existing items.\n\n' +
+    'It will NOT overwrite images, galleries, or descriptions on items that already exist in Firestore ' +
+    '(so your manual edits are safe).\n\nContinue?'
+  );
+  if (!confirmed) return;
+
   showToast('Starting import from GitHub...', 'success');
+
+  const PROTECTED_FIELDS = ['image', 'gallery', 'description'];
 
   for (const sec of sections) {
     try {
@@ -1155,13 +1171,37 @@ async function importFromGitHub() {
       if (!items.length) continue;
 
       const col = getCollectionName(sec);
+      const colRef = db.collection(col);
+
+      // Fetch existing docs first so we know what already exists and can
+      // protect their edited fields instead of blindly overwriting.
+      const existingSnap = await colRef.get();
+      const existingIds = new Set(existingSnap.docs.map(d => d.id));
+
       let batch = db.batch();
       let count = 0;
+      let added = 0;
+      let updated = 0;
+
       for (let i = 0; i < items.length; i++) {
-        const item = items[i];
+        const item = { ...items[i] };
         const id = item.id || (item.name || 'item-' + i).toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        const ref = db.collection(col).doc(id);
-        batch.set(ref, { ...item, order: i }, { merge: true });
+        const ref = colRef.doc(id);
+
+        if (existingIds.has(id)) {
+          // Existing item - strip protected fields so we never clobber a
+          // manual edit. Only non-protected fields (price, hours, tags, etc.)
+          // get updated from the JSON.
+          PROTECTED_FIELDS.forEach(f => delete item[f]);
+          if (Object.keys(item).length === 0) continue;
+          batch.set(ref, item, { merge: true });
+          updated++;
+        } else {
+          // Brand new item - safe to write everything including image.
+          batch.set(ref, { ...item, order: i }, { merge: true });
+          added++;
+        }
+
         count++;
         if (count === 400) {
           await batch.commit();
@@ -1170,7 +1210,7 @@ async function importFromGitHub() {
         }
       }
       if (count > 0) await batch.commit();
-      showToast(`Imported ${items.length} into ${sec}`, 'success');
+      showToast(`${sec}: ${added} new, ${updated} updated (images/descriptions preserved)`, 'success');
     } catch (e) {
       showToast('Error importing ' + sec + ': ' + e.message, 'error');
     }
