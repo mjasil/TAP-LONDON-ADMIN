@@ -182,6 +182,7 @@
       <div class="sidebar-logo"><div class="badge">T</div><span>TAP LONDON</span></div>
       <div class="nav-section">Main</div>
       <div class="nav-item" data-page="dashboard" onclick="showPage('dashboard')"><span class="nav-icon">📊</span><span>Dashboard</span></div>
+      <div class="nav-item" data-page="audit-log" onclick="showPage('audit-log'); loadAuditLog();"><span class="nav-icon">📝</span><span>Audit Log</span></div>
       <div class="nav-section">Content</div>
       <div class="nav-item" data-page="places" onclick="showPage('places')"><span class="nav-icon">🏛️</span><span>Places</span></div>
       <div class="nav-item" data-page="food" onclick="showPage('food')"><span class="nav-icon">🍽️</span><span>Food</span></div>
@@ -241,6 +242,17 @@
             </div>
           </div>
 
+        </div>
+
+        <!-- AUDIT LOG -->
+        <div id="page-audit-log" class="page">
+          <div class="section-header">
+            <div class="section-title"><h2>📝 Audit Log</h2><p>Recent changes across the panel — who did what, and when</p></div>
+            <button class="btn btn-secondary" onclick="loadAuditLog()">↻ Refresh</button>
+          </div>
+          <div class="card" style="padding:0;">
+            <div id="audit-log-list"></div>
+          </div>
         </div>
 
         <!-- DYNAMIC SECTION PAGES (built by JS) -->
@@ -354,6 +366,68 @@ const db = firebase.firestore();
 function getCollectionName(sec) {
   const map = { 'hidden-gems': 'hiddenGems' };
   return map[sec] || sec;
+}
+
+// ═══════════════════════════════════════════
+// AUDIT LOG
+// ═══════════════════════════════════════════
+// Records who changed what, when, on every save/delete across the panel.
+// Kept lightweight - stores the action, section, item name/id, and a summary
+// of which fields changed (not full before/after payloads, to keep documents small).
+async function writeAuditLog(action, section, itemId, itemName, changedFields) {
+  try {
+    await db.collection('auditLog').add({
+      action,               // 'create' | 'update' | 'delete'
+      section,
+      itemId,
+      itemName: itemName || itemId,
+      changedFields: changedFields || [],
+      user: (auth.currentUser && auth.currentUser.email) || 'unknown',
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (e) {
+    // Never let audit logging break the actual save/delete - just log to console.
+    console.warn('Audit log write failed:', e.message);
+  }
+}
+
+let auditLogCache = [];
+async function loadAuditLog() {
+  const container = document.getElementById('audit-log-list');
+  if (!container) return;
+  container.innerHTML = '<p style="color:var(--text3);font-size:0.85rem;">Loading...</p>';
+  try {
+    const snap = await db.collection('auditLog').orderBy('timestamp', 'desc').limit(100).get();
+    auditLogCache = [];
+    snap.forEach(doc => auditLogCache.push({ id: doc.id, ...doc.data() }));
+    renderAuditLog(auditLogCache);
+  } catch (e) {
+    container.innerHTML = '<p style="color:var(--danger);font-size:0.85rem;">Failed to load audit log: ' + e.message + '</p>';
+  }
+}
+
+function renderAuditLog(entries) {
+  const container = document.getElementById('audit-log-list');
+  if (!container) return;
+  if (!entries.length) {
+    container.innerHTML = '<p style="color:var(--text3);font-size:0.85rem;">No activity recorded yet.</p>';
+    return;
+  }
+  const actionColors = { create: '#7ac9a0', update: '#c9a84c', delete: '#e55a5a' };
+  const actionLabels = { create: 'Added', update: 'Updated', delete: 'Deleted' };
+  container.innerHTML = entries.map(e => {
+    const time = e.timestamp && e.timestamp.toDate ? e.timestamp.toDate().toLocaleString() : 'just now';
+    const color = actionColors[e.action] || '#888';
+    const label = actionLabels[e.action] || e.action;
+    const fieldsNote = (e.changedFields && e.changedFields.length) ? ` — ${e.changedFields.join(', ')}` : '';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);">
+      <span style="background:${color}22;color:${color};padding:3px 10px;border-radius:20px;font-size:0.68rem;font-weight:700;white-space:nowrap;">${label}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.85rem;font-weight:600;">${e.itemName || e.itemId}<span style="color:var(--text3);font-weight:400;"> in ${e.section}${fieldsNote}</span></div>
+        <div style="font-size:0.72rem;color:var(--text3);">${e.user} · ${time}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ═══════════════════════════════════════════
@@ -1163,12 +1237,14 @@ async function saveItem() {
   try {
     if (currentEditId) {
       await db.collection(col).doc(currentEditId).set(data, { merge: true });
+      writeAuditLog('update', currentSection, currentEditId, data.name, Object.keys(data));
       showToast('Updated successfully', 'success');
     } else {
       const id = (data.name || 'item').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now().toString(36);
       const snap = await db.collection(col).get();
       data.order = snap.size;
       await db.collection(col).doc(id).set(data);
+      writeAuditLog('create', currentSection, id, data.name, Object.keys(data));
       showToast('Added successfully', 'success');
     }
     closeModal();
@@ -1182,7 +1258,15 @@ async function saveItem() {
 async function deleteItem(sec, id) {
   if (!confirm('Delete this item? This cannot be undone.')) return;
   try {
+    // Grab the name before deleting so the audit log entry is readable later
+    let itemName = id;
+    try {
+      const doc = await db.collection(getCollectionName(sec)).doc(id).get();
+      if (doc.exists && doc.data().name) itemName = doc.data().name;
+    } catch (e) {}
+
     await db.collection(getCollectionName(sec)).doc(id).delete();
+    writeAuditLog('delete', sec, id, itemName, []);
     showToast('Deleted', 'success');
     loadSectionItems(sec);
     refreshStats();
