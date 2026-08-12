@@ -195,6 +195,10 @@
       <div class="nav-item" data-page="hotels" onclick="showPage('hotels')"><span class="nav-icon">🏨</span><span>Hotels</span></div>
       <div class="nav-item" data-page="offers" onclick="showPage('offers')"><span class="nav-icon">🏷️</span><span>Offers &amp; Deals</span></div>
       <div class="nav-item" data-page="hidden-gems" onclick="showPage('hidden-gems')"><span class="nav-icon">💎</span><span>Hidden Gems</span></div>
+      <div class="nav-item" data-page="theatre" onclick="showPage('theatre')"><span class="nav-icon">🎭</span><span>Theatre</span></div>
+      <div class="nav-item" data-page="universities" onclick="showPage('universities')"><span class="nav-icon">🎓</span><span>Universities</span></div>
+      <div class="nav-item" data-page="daytrips" onclick="showPage('daytrips')"><span class="nav-icon">🚆</span><span>Day Trips</span></div>
+      <div class="nav-item" data-page="music" onclick="showPage('music')"><span class="nav-icon">🎵</span><span>Music</span></div>
       <div class="nav-item" data-page="trending" onclick="showPage('trending')"><span class="nav-icon">🔥</span><span>Trending</span></div>
       <div class="nav-item" data-page="sports" onclick="showPage('sports')"><span class="nav-icon">⚽</span><span>Sports</span></div>
       <div class="nav-item" data-page="guides" onclick="showPage('guides')"><span class="nav-icon">📖</span><span>Guides</span></div>
@@ -251,6 +255,10 @@
         <div id="page-hotels" class="page"></div>
         <div id="page-offers" class="page"></div>
         <div id="page-hidden-gems" class="page"></div>
+        <div id="page-theatre" class="page"></div>
+        <div id="page-universities" class="page"></div>
+        <div id="page-daytrips" class="page"></div>
+        <div id="page-music" class="page"></div>
         <div id="page-trending" class="page"></div>
         <div id="page-sports" class="page"></div>
         <div id="page-guides" class="page"></div>
@@ -415,6 +423,82 @@ const SECTIONS = {
       { key: 'entryFee', label: 'Entry Fee', type: 'text' },
       { key: 'priceType', label: 'Price Type', type: 'select', options: ['Free', 'Paid'] },
       { key: 'offerTag', label: 'Special Offer Available', type: 'checkbox' },
+      { key: 'image', label: 'Main Image URL', type: 'image' },
+      { key: 'gallery', label: 'Gallery (additional photos)', type: 'gallery' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+  'hidden-gems': {
+    label: 'Hidden Gems', icon: '💎',
+    cats: ['Hidden Gem'],
+    fields: [
+      { key: 'name', label: 'Name', type: 'text', required: true },
+      { key: 'area', label: 'Area', type: 'text' },
+      { key: 'category', label: 'Category', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'vibe', label: 'Vibe', type: 'text' },
+      { key: 'bestTime', label: 'Best Time to Visit', type: 'text' },
+      { key: 'entryFee', label: 'Entry Fee', type: 'text' },
+      { key: 'image', label: 'Main Image URL', type: 'image' },
+      { key: 'gallery', label: 'Gallery (additional photos)', type: 'gallery' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+  theatre: {
+    label: 'Theatre', icon: '🎭',
+    cats: ['Musical', 'Play'],
+    fields: [
+      { key: 'name', label: 'Show Name', type: 'text', required: true },
+      { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
+      { key: 'theatre', label: 'Theatre', type: 'text' },
+      { key: 'area', label: 'Area', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'priceRange', label: 'Price Range', type: 'text' },
+      { key: 'runningTime', label: 'Running Time', type: 'text' },
+      { key: 'image', label: 'Main Image URL', type: 'image' },
+      { key: 'gallery', label: 'Gallery (additional photos)', type: 'gallery' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+  universities: {
+    label: 'Universities', icon: '🎓',
+    fields: [
+      { key: 'name', label: 'University Name', type: 'text', required: true },
+      { key: 'area', label: 'Area', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'founded', label: 'Founded', type: 'text' },
+      { key: 'focus', label: 'Focus / Specialism', type: 'text' },
+      { key: 'ranking', label: 'Ranking', type: 'text' },
+      { key: 'image', label: 'Main Image URL', type: 'image' },
+      { key: 'gallery', label: 'Gallery (additional photos)', type: 'gallery' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+  daytrips: {
+    label: 'Day Trips', icon: '🚆',
+    cats: ['Royal & Historic', 'Ancient & Prehistoric', 'University City', 'Roman & Georgian', 'Countryside'],
+    fields: [
+      { key: 'name', label: 'Destination Name', type: 'text', required: true },
+      { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
+      { key: 'distance', label: 'Distance / Travel Time', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'bestFor', label: 'Best For', type: 'text' },
+      { key: 'entryFee', label: 'Entry Fee', type: 'text' },
+      { key: 'priceType', label: 'Price Type', type: 'select', options: ['Free', 'Paid'] },
+      { key: 'image', label: 'Main Image URL', type: 'image' },
+      { key: 'gallery', label: 'Gallery (additional photos)', type: 'gallery' },
+      { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
+    ]
+  },
+  music: {
+    label: 'Music', icon: '🎵',
+    cats: ['Live Music', 'Concert Hall'],
+    fields: [
+      { key: 'name', label: 'Venue Name', type: 'text', required: true },
+      { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
+      { key: 'area', label: 'Area', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'priceRange', label: 'Price Range', type: 'text' },
       { key: 'image', label: 'Main Image URL', type: 'image' },
       { key: 'gallery', label: 'Gallery (additional photos)', type: 'gallery' },
       { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
