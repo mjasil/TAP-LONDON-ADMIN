@@ -918,7 +918,10 @@ function renderItemList(sec, items) {
     return;
   }
   list.innerHTML = items.map((item, i) => `
-    <div class="item-row">
+    <div class="item-row" draggable="true" data-id="${item.id}" data-section="${sec}"
+         ondragstart="handleDragStart(event)" ondragover="handleDragOver(event)"
+         ondrop="handleDrop(event)" ondragend="handleDragEnd(event)">
+      <span class="drag-handle" title="Drag to reorder" style="cursor:grab;color:var(--text3);padding:0 4px;font-size:1.1rem;user-select:none;">⠿</span>
       <img class="item-thumb" src="${item.image || ''}" onerror="this.style.opacity=0.2" alt=""/>
       <div class="item-info">
         <div class="item-name">${esc(item.name || 'Untitled')}</div>
@@ -936,6 +939,69 @@ function renderItemList(sec, items) {
       </div>
     </div>
   `).join('');
+}
+
+// ═══════════════════════════════════════════
+// DRAG & DROP REORDER
+// ═══════════════════════════════════════════
+let dragSourceEl = null;
+
+function handleDragStart(evt) {
+  dragSourceEl = evt.currentTarget;
+  evt.currentTarget.style.opacity = '0.4';
+  evt.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragOver(evt) {
+  evt.preventDefault();
+  evt.dataTransfer.dropEffect = 'move';
+  const target = evt.currentTarget;
+  if (target === dragSourceEl) return;
+  const list = target.parentElement;
+  const rows = Array.from(list.querySelectorAll('.item-row'));
+  const sourceIndex = rows.indexOf(dragSourceEl);
+  const targetIndex = rows.indexOf(target);
+  if (sourceIndex < targetIndex) {
+    target.after(dragSourceEl);
+  } else {
+    target.before(dragSourceEl);
+  }
+}
+
+function handleDrop(evt) {
+  evt.preventDefault();
+  evt.stopPropagation();
+  return false;
+}
+
+async function handleDragEnd(evt) {
+  evt.currentTarget.style.opacity = '1';
+  const list = evt.currentTarget.parentElement;
+  const sec = evt.currentTarget.dataset.section;
+  const rows = Array.from(list.querySelectorAll('.item-row'));
+  const newOrderIds = rows.map(r => r.dataset.id);
+
+  // Only write to Firestore if the order actually changed
+  const cached = sectionItemsCache[sec] || [];
+  const oldOrderIds = cached.map(i => i.id);
+  const changed = newOrderIds.some((id, i) => id !== oldOrderIds[i]);
+  if (!changed) { dragSourceEl = null; return; }
+
+  try {
+    const col = getCollectionName(sec);
+    const batch = db.batch();
+    newOrderIds.forEach((id, i) => {
+      batch.update(db.collection(col).doc(id), { order: i });
+    });
+    await batch.commit();
+    writeAuditLog('update', sec, 'reorder', 'Reordered ' + newOrderIds.length + ' items', ['order']);
+    showToast('Order saved', 'success');
+    loadSectionItems(sec);
+  } catch (e) {
+    showToast('Error saving order: ' + e.message, 'error');
+    loadSectionItems(sec); // revert visual order on failure
+  }
+  dragSourceEl = null;
 }
 
 function toggleItemMenu(evt, sec, id) {
