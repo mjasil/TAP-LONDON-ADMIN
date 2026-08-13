@@ -848,7 +848,10 @@ async function refreshStats() {
     `<div class="stat-card"><div class="stat-num" id="stat-${key}">—</div><div class="stat-label">${cfg.icon} ${cfg.label}</div></div>`
   ).join('');
 
-  for (const sec of Object.keys(SECTIONS)) {
+  // Run all section count queries in parallel instead of one-by-one -
+  // this was the main cause of slow dashboard loads (23 sequential queries
+  // instead of 23 simultaneous ones, which is much faster on Firestore).
+  await Promise.all(Object.keys(SECTIONS).map(async (sec) => {
     try {
       const snap = await db.collection(getCollectionName(sec)).get();
       const el = document.getElementById('stat-' + sec);
@@ -857,7 +860,7 @@ async function refreshStats() {
       const el = document.getElementById('stat-' + sec);
       if (el) el.textContent = '0';
     }
-  }
+  }));
 }
 
 // ═══════════════════════════════════════════
@@ -922,7 +925,7 @@ function renderItemList(sec, items) {
          ondragstart="handleDragStart(event)" ondragover="handleDragOver(event)"
          ondrop="handleDrop(event)" ondragend="handleDragEnd(event)">
       <span class="drag-handle" title="Drag to reorder" style="cursor:grab;color:var(--text3);padding:0 4px;font-size:1.1rem;user-select:none;">⠿</span>
-      <img class="item-thumb" src="${item.image || ''}" onerror="this.style.opacity=0.2" alt=""/>
+      <img class="item-thumb" src="${item.image || ''}" loading="lazy" onerror="this.style.opacity=0.2" alt=""/>
       <div class="item-info">
         <div class="item-name">${esc(item.name || 'Untitled')}</div>
         <div class="item-meta">${esc(item.category || item.section || item.sport || '')}${item.area ? ' · ' + esc(item.area) : ''}</div>
