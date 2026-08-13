@@ -1168,12 +1168,17 @@ function renderModalFields(cfg, item) {
         <label>${f.label}</label>
         <div id="gallery-thumbs-${f.key}" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
           ${galleryArr.map((url, i) => `
-            <div style="position:relative;width:64px;height:64px;">
-              <img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"/>
-              <button type="button" onclick="removeGalleryImage('${f.key}', ${i})" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:0.7rem;cursor:pointer;">✕</button>
+            <div class="gallery-thumb" draggable="true" data-gallery-key="${f.key}" data-index="${i}"
+                 ondragstart="handleGalleryDragStart(event)" ondragover="handleGalleryDragOver(event)"
+                 ondrop="handleGalleryDrop(event)" ondragend="handleGalleryDragEnd(event)"
+                 style="position:relative;width:64px;height:64px;cursor:grab;">
+              <img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;pointer-events:none;"/>
+              ${i === 0 ? '<span style="position:absolute;bottom:-6px;left:2px;background:var(--gold);color:#1a1a2e;font-size:0.55rem;font-weight:700;padding:1px 5px;border-radius:6px;">MAIN</span>' : ''}
+              <button type="button" onclick="removeGalleryImage('${f.key}', ${i})" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:0.7rem;cursor:pointer;z-index:2;">✕</button>
             </div>
           `).join('')}
         </div>
+        <p style="font-size:0.7rem;color:var(--text3);margin:-4px 0 8px;">Drag photos to reorder — first photo is used as the gallery cover.</p>
         <input type="file" accept="image/*" multiple id="field-${f.key}-gallery-upload" style="display:none;" onchange="handleGalleryUpload('${f.key}', this)"/>
         <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('field-${f.key}-gallery-upload').click()">📷 Add Photos</button>
       </div>`;
@@ -1210,11 +1215,61 @@ function renderGalleryThumbs(key) {
   if (!container) return;
   const arr = window._galleryState[key] || [];
   container.innerHTML = arr.map((url, i) => `
-    <div style="position:relative;width:64px;height:64px;">
-      <img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"/>
-      <button type="button" onclick="removeGalleryImage('${key}', ${i})" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:0.7rem;cursor:pointer;">✕</button>
+    <div class="gallery-thumb" draggable="true" data-gallery-key="${key}" data-index="${i}"
+         ondragstart="handleGalleryDragStart(event)" ondragover="handleGalleryDragOver(event)"
+         ondrop="handleGalleryDrop(event)" ondragend="handleGalleryDragEnd(event)"
+         style="position:relative;width:64px;height:64px;cursor:grab;">
+      <img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;pointer-events:none;"/>
+      ${i === 0 ? '<span style="position:absolute;bottom:-6px;left:2px;background:var(--gold);color:#1a1a2e;font-size:0.55rem;font-weight:700;padding:1px 5px;border-radius:6px;">MAIN</span>' : ''}
+      <button type="button" onclick="removeGalleryImage('${key}', ${i})" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:0.7rem;cursor:pointer;z-index:2;">✕</button>
     </div>
   `).join('');
+}
+
+// ═══════════════════════════════════════════
+// GALLERY DRAG & DROP REORDER
+// ═══════════════════════════════════════════
+let gallerySourceEl = null;
+
+function handleGalleryDragStart(evt) {
+  gallerySourceEl = evt.currentTarget;
+  evt.currentTarget.style.opacity = '0.4';
+  evt.dataTransfer.effectAllowed = 'move';
+}
+
+function handleGalleryDragOver(evt) {
+  evt.preventDefault();
+  evt.dataTransfer.dropEffect = 'move';
+  const target = evt.currentTarget;
+  if (target === gallerySourceEl) return;
+  const container = target.parentElement;
+  const thumbs = Array.from(container.querySelectorAll('.gallery-thumb'));
+  const sourceIndex = thumbs.indexOf(gallerySourceEl);
+  const targetIndex = thumbs.indexOf(target);
+  if (sourceIndex < targetIndex) {
+    target.after(gallerySourceEl);
+  } else {
+    target.before(gallerySourceEl);
+  }
+}
+
+function handleGalleryDrop(evt) {
+  evt.preventDefault();
+  evt.stopPropagation();
+  return false;
+}
+
+function handleGalleryDragEnd(evt) {
+  evt.currentTarget.style.opacity = '1';
+  const container = evt.currentTarget.parentElement;
+  const key = evt.currentTarget.dataset.galleryKey;
+  const thumbs = Array.from(container.querySelectorAll('.gallery-thumb'));
+  const currentUrls = window._galleryState[key] || [];
+  const newOrder = thumbs.map(t => currentUrls[parseInt(t.dataset.index)]);
+
+  window._galleryState[key] = newOrder;
+  renderGalleryThumbs(key); // re-render so indexes/MAIN badge/remove buttons stay correct
+  gallerySourceEl = null;
 }
 
 function clearImageField(key) {
