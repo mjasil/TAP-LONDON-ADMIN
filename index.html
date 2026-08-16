@@ -1397,7 +1397,27 @@ async function deleteItem(sec, id) {
       if (doc.exists && doc.data().name) itemName = doc.data().name;
     } catch (e) {}
 
-    await db.collection(getCollectionName(sec)).doc(id).delete();
+    const col = getCollectionName(sec);
+    await db.collection(col).doc(id).delete();
+
+    // Record a "tombstone" so the automated sync script (which runs every
+    // 30 min and reads from data/*.json in the repo) knows this item was
+    // deliberately deleted and must NOT re-add it just because it still
+    // exists in the JSON file. Without this, any deleted item would come
+    // back on the next sync run since the script only checks "does this ID
+    // exist in Firestore" - it can't tell "never existed" apart from
+    // "existed and was deleted."
+    try {
+      await db.collection('deletedItems').doc(col + '_' + id).set({
+        collection: col,
+        itemId: id,
+        deletedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        deletedBy: (auth.currentUser && auth.currentUser.email) || 'unknown',
+      });
+    } catch (e) {
+      console.warn('Could not record deletion tombstone:', e.message);
+    }
+
     writeAuditLog('delete', sec, id, itemName, []);
     showToast('Deleted', 'success');
     loadSectionItems(sec);
