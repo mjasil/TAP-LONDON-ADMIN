@@ -435,9 +435,57 @@ function renderAuditLog(entries) {
 // ═══════════════════════════════════════════
 const CLOUD = { name: 'dygvxcour', preset: 'tap_london_upload' };
 
+// Compresses/resizes an image in the browser before upload. Photos straight
+// off a phone camera are often 8-15MB+ at full resolution - uploading that
+// raw file was the real cause of slow uploads, since all of it has to
+// transfer before Cloudinary can even start processing. Resizing to a
+// sensible max dimension and re-encoding as JPEG at 85% quality typically
+// cuts file size by 80-95% with no visible quality loss for web use.
+function compressImage(file, maxDimension = 1920, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/') || file.type === 'image/svg+xml') {
+      resolve(file); // don't touch SVGs or non-images
+      return;
+    }
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e) => { img.src = e.target.result; };
+    reader.onerror = reject;
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round(height * (maxDimension / width));
+          width = maxDimension;
+        } else {
+          width = Math.round(width * (maxDimension / height));
+          height = maxDimension;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { resolve(file); return; } // fall back to original on failure
+          const compressed = new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' });
+          resolve(compressed);
+        },
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => resolve(file); // fall back to original if it can't be read as an image
+    reader.readAsDataURL(file);
+  });
+}
+
 async function uploadToCloudinary(file) {
+  const compressed = await compressImage(file);
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('file', compressed);
   formData.append('upload_preset', CLOUD.preset);
   const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD.name}/image/upload`, { method: 'POST', body: formData });
   const data = await res.json();
