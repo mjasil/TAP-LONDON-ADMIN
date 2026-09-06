@@ -1182,9 +1182,13 @@ function renderModalFields(cfg, item) {
       return `<div class="form-group">
         <label>${f.label}</label>
         <input type="text" id="field-${f.key}" value="${esc(value)}" placeholder="https://..."/>
-        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+        <div id="field-${f.key}-dropzone" ondragover="handleImageDragOver(event, this)" ondragleave="handleImageDragLeave(event, this)" ondrop="handleImageDrop(event, '${f.key}', this)"
+             style="margin-top:8px;padding:16px;border:2px dashed var(--border);border-radius:8px;text-align:center;transition:all 0.15s;cursor:pointer;"
+             onclick="document.getElementById('field-${f.key}-upload').click()">
           <input type="file" accept="image/*" id="field-${f.key}-upload" style="display:none;" onchange="handleImageUpload('${f.key}', this)"/>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('field-${f.key}-upload').click()">📷 Upload</button>
+          <div style="font-size:0.8rem;color:var(--text3);pointer-events:none;">📷 Drag &amp; drop an image here, or click to browse</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
           <button type="button" class="btn btn-danger btn-sm" onclick="clearImageField('${f.key}')">✕ Remove</button>
           <span id="field-${f.key}-status" style="font-size:0.75rem;color:var(--text3);"></span>
         </div>
@@ -1361,6 +1365,12 @@ function clearImageField(key) {
 async function handleImageUpload(key, input) {
   const file = input.files[0];
   if (!file) return;
+  await uploadImageFile(key, file);
+}
+
+// Shared upload logic used by both the file-picker input and the new
+// drag-and-drop zone, so both paths behave identically.
+async function uploadImageFile(key, file) {
   const status = document.getElementById('field-' + key + '-status');
   status.textContent = 'Uploading...';
   try {
@@ -1373,6 +1383,33 @@ async function handleImageUpload(key, input) {
     status.textContent = 'Upload failed';
     showToast('Image upload failed: ' + e.message, 'error');
   }
+}
+
+// ═══════════════════════════════════════════
+// IMAGE FIELD DRAG & DROP
+// ═══════════════════════════════════════════
+function handleImageDragOver(evt, zone) {
+  evt.preventDefault();
+  zone.style.borderColor = 'var(--gold)';
+  zone.style.background = 'rgba(201,168,76,0.08)';
+}
+
+function handleImageDragLeave(evt, zone) {
+  zone.style.borderColor = 'var(--border)';
+  zone.style.background = 'transparent';
+}
+
+async function handleImageDrop(evt, key, zone) {
+  evt.preventDefault();
+  zone.style.borderColor = 'var(--border)';
+  zone.style.background = 'transparent';
+  const file = evt.dataTransfer.files && evt.dataTransfer.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    showToast('Please drop an image file', 'error');
+    return;
+  }
+  await uploadImageFile(key, file);
 }
 
 async function saveItem() {
