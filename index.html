@@ -419,12 +419,12 @@ function renderAuditLog(entries) {
     const time = e.timestamp && e.timestamp.toDate ? e.timestamp.toDate().toLocaleString() : 'just now';
     const color = actionColors[e.action] || '#888';
     const label = actionLabels[e.action] || e.action;
-    const fieldsNote = (e.changedFields && e.changedFields.length) ? ` — ${e.changedFields.join(', ')}` : '';
+    const fieldsNote = (e.changedFields && e.changedFields.length) ? ` — ${e.changedFields.map(esc).join(', ')}` : '';
     return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);">
       <span style="background:${color}22;color:${color};padding:3px 10px;border-radius:20px;font-size:0.68rem;font-weight:700;white-space:nowrap;">${label}</span>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:0.85rem;font-weight:600;">${e.itemName || e.itemId}<span style="color:var(--text3);font-weight:400;"> in ${e.section}${fieldsNote}</span></div>
-        <div style="font-size:0.72rem;color:var(--text3);">${e.user} · ${time}</div>
+        <div style="font-size:0.85rem;font-weight:600;">${esc(e.itemName || e.itemId)}<span style="color:var(--text3);font-weight:400;"> in ${esc(e.section)}${fieldsNote}</span></div>
+        <div style="font-size:0.72rem;color:var(--text3);">${esc(e.user)} · ${time}</div>
       </div>
     </div>`;
   }).join('');
@@ -489,6 +489,9 @@ async function uploadToCloudinary(file) {
   formData.append('upload_preset', CLOUD.preset);
   const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD.name}/image/upload`, { method: 'POST', body: formData });
   const data = await res.json();
+  if (!res.ok || !data.secure_url) {
+    throw new Error(data.error?.message || 'The image service did not return an image URL');
+  }
   return data.secure_url;
 }
 
@@ -855,7 +858,6 @@ let sectionItemsCache = {};
 // ═══════════════════════════════════════════
 function initApp() {
   Object.keys(SECTIONS).forEach(sec => renderSectionPage(sec));
-  renderImageManager();
   refreshStats();
 }
 
@@ -878,6 +880,7 @@ function showPage(id) {
   document.getElementById('sidebar').classList.remove('open');
 
   if (SECTIONS[id]) loadSectionItems(id);
+  if (id === 'images') renderImageManager();
   if (id === 'popups') initPopupsPage();
   if (id === 'subshops') initSubShopsPage();
   if (id === 'analytics') initAnalyticsPage();
@@ -1652,17 +1655,20 @@ async function renderImageManager() {
     </div>
   `).join('');
 
-  for (const img of IMAGE_SECTIONS) {
-    try {
-      const doc = await db.collection('siteImages').doc(img.id).get();
-      if (doc.exists && doc.data().url) {
-        const url = doc.data().url;
+  try {
+    const snap = await db.collection('siteImages').get();
+    const images = new Map(snap.docs.map(doc => [doc.id, doc.data().url]));
+    for (const img of IMAGE_SECTIONS) {
+      const url = images.get(img.id);
+      if (url) {
         document.getElementById('img-url-' + img.id).value = url;
         const preview = document.getElementById('img-preview-' + img.id);
         preview.src = url;
         preview.style.display = 'block';
       }
-    } catch (e) {}
+    }
+  } catch (e) {
+    showToast('Could not load images: ' + e.message, 'error');
   }
 }
 
