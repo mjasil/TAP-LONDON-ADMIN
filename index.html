@@ -1960,6 +1960,11 @@ async function initAnalyticsPage() {
       <h3>🔥 Top Pages</h3>
       <div id="analytics-pages"></div>
     </div>
+    <div class="card">
+      <h3>📱 NFC Landing Page Visits</h3>
+      <p style="color:var(--text3);font-size:0.76rem;margin-bottom:12px;">These are visits to product landing pages, including previews and direct links. They are not confirmed physical taps.</p>
+      <div id="analytics-nfc"></div>
+    </div>
   `;
 
   try {
@@ -1986,6 +1991,8 @@ async function initAnalyticsPage() {
     pagesSnap.forEach(doc => pagesData.push({ page: doc.id, count: doc.data().count || 0 }));
     pagesData.sort((a, b) => b.count - a.count);
     const topPages = pagesData.slice(0, 10);
+    const nfcPages = pagesData.filter(p => p.page.startsWith('nfc__'));
+    const nfcTotal = nfcPages.reduce((sum, p) => sum + p.count, 0);
 
     // Render summary cards
     document.getElementById('analytics-summary').innerHTML = `
@@ -1993,6 +2000,7 @@ async function initAnalyticsPage() {
       <div class="stat-card"><div class="stat-num">${todayVisits}</div><div class="stat-label">Today</div></div>
       <div class="stat-card"><div class="stat-num">${weekTotal}</div><div class="stat-label">Last 7 Days</div></div>
       <div class="stat-card"><div class="stat-num">${pagesData.length}</div><div class="stat-label">Pages Tracked</div></div>
+      <div class="stat-card"><div class="stat-num">${nfcTotal}</div><div class="stat-label">NFC Landing Visits</div></div>
     `;
 
     // Render daily breakdown
@@ -2028,6 +2036,14 @@ async function initAnalyticsPage() {
         `;
       }).join('');
     }
+
+    const nfcEl = document.getElementById('analytics-nfc');
+    nfcEl.innerHTML = nfcPages.length ? nfcPages.map(p => `
+      <div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);">
+        <div style="flex:1;font-size:0.84rem;color:var(--text);">${p.page.slice(5).replace(/[^a-z0-9_-]/gi, '') || 'Unknown product'}</div>
+        <div style="font-weight:700;color:var(--gold);font-size:0.84rem;">${p.count}</div>
+      </div>
+    `).join('') : '<div class="empty-state"><div class="empty-state-icon">📭</div>No NFC landing visits recorded yet.</div>';
   } catch (e) {
     document.getElementById('analytics-summary').innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div>Error loading analytics: ${e.message}</div>`;
   }
