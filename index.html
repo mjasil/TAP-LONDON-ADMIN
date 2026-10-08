@@ -550,6 +550,11 @@ const SECTIONS = {
       { key: 'offerTag', label: 'Special Offer Available', type: 'checkbox' },
       { key: 'image', label: 'Main Image URL', type: 'image' },
       { key: 'gallery', label: 'Gallery (additional photos)', type: 'gallery' },
+      { key: 'imageCredit', label: 'Photo Author / Credit', type: 'text' },
+      { key: 'imageSourceUrl', label: 'Photo Source URL', type: 'text' },
+      { key: 'imageLicense', label: 'Photo License', type: 'text' },
+      { key: 'imageLicenseUrl', label: 'Photo License URL', type: 'text' },
+      { key: 'websiteUrl', label: 'Official Website URL', type: 'text' },
       { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
     ]
   },
@@ -674,7 +679,7 @@ const SECTIONS = {
   },
   nightlife: {
     label: 'Nightlife', icon: '🌙',
-    cats: ['Rooftop Bars', 'Clubs', 'Live Music', 'Bars'],
+    cats: ['Pubs', 'Rooftop Bars', 'Clubs', 'Live Music', 'Bars'],
     fields: [
       { key: 'name', label: 'Name', type: 'text', required: true },
       { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
@@ -693,6 +698,9 @@ const SECTIONS = {
       { key: 'image', label: 'Image URL', type: 'image' },
       { key: 'gallery', label: 'Gallery (additional photos)', type: 'gallery' },
       { key: 'imageCredit', label: 'Photo Credit', type: 'text' },
+      { key: 'imageSourceUrl', label: 'Photo Source URL', type: 'text' },
+      { key: 'imageLicense', label: 'Photo License', type: 'text' },
+      { key: 'imageLicenseUrl', label: 'Photo License URL', type: 'text' },
       { key: 'imageIsIllustrative', label: 'Image is illustrative, not the venue', type: 'checkbox' },
       { key: 'websiteUrl', label: 'Official Website URL', type: 'text' },
       { key: 'bookingUrl', label: 'Booking URL', type: 'text' },
@@ -727,6 +735,11 @@ const SECTIONS = {
       { key: 'ageRange', label: 'Age Range', type: 'text' },
       { key: 'image', label: 'Image URL', type: 'image' },
       { key: 'gallery', label: 'Gallery (additional photos)', type: 'gallery' },
+      { key: 'imageCredit', label: 'Photo Author / Credit', type: 'text' },
+      { key: 'imageSourceUrl', label: 'Photo Source URL', type: 'text' },
+      { key: 'imageLicense', label: 'Photo License', type: 'text' },
+      { key: 'imageLicenseUrl', label: 'Photo License URL', type: 'text' },
+      { key: 'websiteUrl', label: 'Official Website URL', type: 'text' },
       { key: 'recommended', label: '⭐ TAP LONDON Recommended', type: 'checkbox' },
       { key: 'familyFriendlyBadge', label: '👨‍👩‍👧 Family Friendly Badge', type: 'checkbox' },
       { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
@@ -1587,7 +1600,7 @@ async function exportSection(sec) {
 // IMPORT FROM GITHUB
 // ═══════════════════════════════════════════
 async function importFromGitHub() {
-  const GITHUB_RAW = 'https://raw.githubusercontent.com/rakkan1l/TAP-LONDON/main/data';
+  const GITHUB_RAW = 'https://raw.githubusercontent.com/mjasil/TAP-LONDON-1/main/data';
   const sections = Object.keys(SECTIONS);
 
   // Confirm before running - this used to silently overwrite manually-edited
@@ -1606,7 +1619,7 @@ async function importFromGitHub() {
 
   showToast('Starting import from GitHub...', 'success');
 
-  const PROTECTED_FIELDS = ['image', 'gallery', 'description'];
+  const PROTECTED_FIELDS = ['image', 'gallery', 'description', 'imageCredit', 'imageSourceUrl', 'imageLicense', 'imageLicenseUrl'];
   const NIGHTLIFE_ADMIN_FIELDS = [
     'listingStatus', 'partnerConfirmed', 'contactStatus', 'tapRating', 'tapReview',
     'tapOfferText', 'tapOfferUrl', 'tapOfferExpires', 'tonightEventName',
