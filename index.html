@@ -681,10 +681,34 @@ const SECTIONS = {
       { key: 'area', label: 'Area', type: 'text' },
       { key: 'description', label: 'Description', type: 'textarea' },
       { key: 'openingHours', label: 'Opening Hours', type: 'text' },
+      { key: 'openingNights', label: 'Opening Nights (e.g. Fri–Sat)', type: 'text' },
       { key: 'entryFee', label: 'Entry Fee', type: 'text' },
+      { key: 'priceRange', label: 'Price Range', type: 'text' },
+      { key: 'musicType', label: 'Music Type', type: 'text' },
       { key: 'dressCode', label: 'Dress Code', type: 'text' },
+      { key: 'nearestStation', label: 'Nearest Tube Station', type: 'text' },
+      { key: 'vibe', label: 'Vibe', type: 'text' },
+      { key: 'audience', label: 'Audience', type: 'text' },
+      { key: 'agePolicy', label: 'Age Policy', type: 'text' },
       { key: 'image', label: 'Image URL', type: 'image' },
       { key: 'gallery', label: 'Gallery (additional photos)', type: 'gallery' },
+      { key: 'imageCredit', label: 'Photo Credit', type: 'text' },
+      { key: 'imageIsIllustrative', label: 'Image is illustrative, not the venue', type: 'checkbox' },
+      { key: 'websiteUrl', label: 'Official Website URL', type: 'text' },
+      { key: 'bookingUrl', label: 'Booking URL', type: 'text' },
+      { key: 'instagramUrl', label: 'Instagram URL', type: 'text' },
+      { key: 'tiktokUrl', label: 'TikTok URL', type: 'text' },
+      { key: 'listingStatus', label: 'Listing Status', type: 'select', options: ['Listed', 'TAP Partner', 'Event Partner'] },
+      { key: 'partnerConfirmed', label: 'Confirmed agreement — show partner badge publicly', type: 'checkbox' },
+      { key: 'contactStatus', label: 'Outreach Stage', type: 'select', options: ['Not contacted', 'Contacted', 'In discussion', 'Partnered'] },
+      { key: 'tapRating', label: 'TAP Rating (1–5, optional)', type: 'text' },
+      { key: 'tapReview', label: 'TAP Review (only with a real rating)', type: 'textarea' },
+      { key: 'tapOfferText', label: 'Verified TAP Offer', type: 'text' },
+      { key: 'tapOfferUrl', label: 'Offer URL', type: 'text' },
+      { key: 'tapOfferExpires', label: 'Offer Expiry Date', type: 'date' },
+      { key: 'tonightEventName', label: "Tonight's Event (only appears on event date)", type: 'text' },
+      { key: 'tonightEventDate', label: 'Event Date', type: 'date' },
+      { key: 'eventUrl', label: 'Event URL', type: 'text' },
       { key: 'recommended', label: '⭐ TAP LONDON Recommended', type: 'checkbox' },
       { key: 'openLate', label: '🌙 Open Late', type: 'checkbox' },
       { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
@@ -987,7 +1011,7 @@ function renderItemList(sec, items) {
       <img class="item-thumb" src="${item.image || ''}" loading="lazy" onerror="this.style.opacity=0.2" alt=""/>
       <div class="item-info">
         <div class="item-name">${esc(item.name || 'Untitled')}</div>
-        <div class="item-meta">${esc(item.category || item.section || item.sport || '')}${item.area ? ' · ' + esc(item.area) : ''}</div>
+        <div class="item-meta">${esc(item.category || item.section || item.sport || '')}${item.area ? ' · ' + esc(item.area) : ''}${sec === 'nightlife' ? ' · ' + esc(item.partnerConfirmed && ['TAP Partner','Event Partner'].includes(item.listingStatus) ? item.listingStatus : 'Listed') + ' · ' + esc(item.contactStatus || 'Not contacted') : ''}</div>
       </div>
       <div class="item-actions" style="position:relative;">
         <button class="icon-btn" onclick="openEditModal('${sec}','${item.id}')" title="Edit">✏️</button>
@@ -1169,7 +1193,7 @@ function renderModalFields(cfg, item) {
   const container = document.getElementById('modal-form-fields');
   window._galleryState = {};
   container.innerHTML = cfg.fields.map(f => {
-    let value = item[f.key] || '';
+    let value = item[f.key] || (f.key === 'listingStatus' ? 'Listed' : f.key === 'contactStatus' ? 'Not contacted' : '');
     if (f.key === 'tags' && Array.isArray(value)) value = value.join(', ');
     if (f.type === 'textarea') {
       return `<div class="form-group"><label>${f.label}</label><textarea id="field-${f.key}">${esc(value)}</textarea></div>`;
@@ -1249,7 +1273,7 @@ function renderModalFields(cfg, item) {
         <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('field-${f.key}-gallery-upload').click()">📷 Add Photos</button>
       </div>`;
     }
-    return `<div class="form-group"><label>${f.label}</label><input type="text" id="field-${f.key}" value="${esc(value)}"/></div>`;
+    return `<div class="form-group"><label>${f.label}</label><input type="${f.type === 'date' ? 'date' : 'text'}" id="field-${f.key}" value="${esc(value)}"/></div>`;
   }).join('');
 }
 
@@ -1453,6 +1477,28 @@ async function saveItem() {
     return;
   }
 
+  if (currentSection === 'nightlife') {
+    if (data.listingStatus === 'Listed') data.partnerConfirmed = false;
+    if (data.partnerConfirmed && !['TAP Partner', 'Event Partner'].includes(data.listingStatus)) {
+      showToast('Choose a partner status before confirming an agreement', 'error');
+      return;
+    }
+    if (data.tapRating && (!Number.isFinite(Number(data.tapRating)) || Number(data.tapRating) < 1 || Number(data.tapRating) > 5)) {
+      showToast('TAP rating must be between 1 and 5', 'error');
+      return;
+    }
+    if (data.tonightEventName && !data.tonightEventDate) {
+      showToast('Set the event date so the event only appears on the correct night', 'error');
+      return;
+    }
+    for (const key of ['websiteUrl', 'bookingUrl', 'instagramUrl', 'tiktokUrl', 'tapOfferUrl', 'eventUrl']) {
+      if (data[key] && !/^https?:\/\/\S+$/i.test(data[key])) {
+        showToast('Enter a complete https:// URL for ' + key, 'error');
+        return;
+      }
+    }
+  }
+
   const col = getCollectionName(currentSection);
   try {
     if (currentEditId) {
@@ -1561,6 +1607,13 @@ async function importFromGitHub() {
   showToast('Starting import from GitHub...', 'success');
 
   const PROTECTED_FIELDS = ['image', 'gallery', 'description'];
+  const NIGHTLIFE_ADMIN_FIELDS = [
+    'listingStatus', 'partnerConfirmed', 'contactStatus', 'tapRating', 'tapReview',
+    'tapOfferText', 'tapOfferUrl', 'tapOfferExpires', 'tonightEventName',
+    'tonightEventDate', 'eventUrl', 'musicType', 'priceRange', 'openingNights',
+    'websiteUrl', 'bookingUrl', 'instagramUrl', 'tiktokUrl', 'nearestStation',
+    'vibe', 'audience', 'agePolicy', 'imageCredit', 'imageIsIllustrative',
+  ];
 
   for (const sec of sections) {
     try {
@@ -1596,6 +1649,7 @@ async function importFromGitHub() {
           // manual edit. Only non-protected fields (price, hours, tags, etc.)
           // get updated from the JSON.
           PROTECTED_FIELDS.forEach(f => delete item[f]);
+          if (sec === 'nightlife') NIGHTLIFE_ADMIN_FIELDS.forEach(f => delete item[f]);
           if (Object.keys(item).length === 0) continue;
           batch.set(ref, item, { merge: true });
           updated++;
