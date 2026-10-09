@@ -1452,6 +1452,68 @@ async function handleImageDrop(evt, key, zone) {
   await uploadImageFile(key, file);
 }
 
+// Firestore's single array-contains index supports category, one quick filter,
+// and prefix search together without loading a whole collection in the browser.
+function normalize(value) {
+  return String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+}
+
+function filtersFor(item, section) {
+  const result = [];
+  const fee = String(item.entryFee || '');
+  if (section === 'places' || section === 'kids') {
+    if ((item.priceType === 'Free' || /^free(?: entry)?$/i.test(fee)) && !/£\s?\d/.test(fee)) result.push('free');
+  }
+  if (section === 'kids') {
+    if (/museum|aquarium|indoor/i.test(item.category || '')) result.push('indoor');
+    if (/park|zoo|garden|outdoor/i.test(item.category || '')) result.push('outdoor');
+  }
+  if (section === 'food') {
+    if (item.halal === true || item.verifiedHalal === true || (item.tags || []).includes('halal')) result.push('halal');
+    if (item.priceRange === '£' || (item.tags || []).includes('cheap-eats')) result.push('cheap');
+  }
+  if (section === 'nightlife') {
+    if (/rooftop/i.test(item.category || '')) result.push('rooftop');
+    if (item.openLate === true || /2[2-3]:00|midnight|late|24 hour/i.test(item.openingHours || '')) result.push('open-late');
+  }
+  return result;
+}
+
+function prefixesFor(item) {
+  const phrases = [item.name, item.area, item.location, item.category, item.cuisine, item.type]
+    .map(normalize).filter(Boolean);
+  const prefixes = new Set();
+  for (const phrase of phrases) {
+    for (const part of [phrase, ...phrase.split(' ')]) {
+      for (let length = 2; length <= Math.min(part.length, 30); length++) {
+        prefixes.add(part.slice(0, length));
+      }
+    }
+  }
+  return [...prefixes].slice(0, 140);
+}
+
+function directoryKeys(item, section) {
+  const category = normalize(item.category || item.section || '');
+  const filters = filtersFor(item, section);
+  const keys = new Set();
+  for (const filter of filters) {
+    keys.add(`f:${filter}`);
+    if (category) keys.add(`cf:${category}:${filter}`);
+  }
+  for (const prefix of prefixesFor(item)) {
+    keys.add(`q:${prefix}`);
+    if (category) keys.add(`cq:${category}:${prefix}`);
+    for (const filter of filters) {
+      keys.add(`fq:${filter}:${prefix}`);
+      if (category) keys.add(`cfq:${category}:${filter}:${prefix}`);
+    }
+  }
+  return [...keys];
+}
+
+
 async function saveItem() {
   if (!currentSection) return;
   const cfg = SECTIONS[currentSection];
@@ -1512,6 +1574,10 @@ async function saveItem() {
     }
   }
 
+  if (['places', 'food', 'nightlife', 'kids', 'hotels', 'shopping'].includes(currentSection)) {
+    data.directoryKeys = directoryKeys(data, currentSection);
+  }
+
   const col = getCollectionName(currentSection);
   try {
     if (currentEditId) {
@@ -1520,8 +1586,7 @@ async function saveItem() {
       showToast('Updated successfully', 'success');
     } else {
       const id = (data.name || 'item').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now().toString(36);
-      const snap = await db.collection(col).get();
-      data.order = snap.size;
+      data.order = Date.now();
       await db.collection(col).doc(id).set(data);
       writeAuditLog('create', currentSection, id, data.name, Object.keys(data));
       showToast('Added successfully', 'success');
@@ -1645,7 +1710,8 @@ async function importFromGitHub() {
       // Fetch existing docs first so we know what already exists and can
       // protect their edited fields instead of blindly overwriting.
       const existingSnap = await colRef.get();
-      const existingIds = new Set(existingSnap.docs.map(d => d.id));
+      const existingById = new Map(existingSnap.docs.map(d => [d.id, d.data()]));
+      const existingIds = new Set(existingById.keys());
 
       let batch = db.batch();
       let count = 0;
@@ -1654,6 +1720,9 @@ async function importFromGitHub() {
 
       for (let i = 0; i < items.length; i++) {
         const item = { ...items[i] };
+        if (['places', 'food', 'nightlife', 'kids', 'hotels', 'shopping'].includes(sec)) {
+          item.directoryKeys = directoryKeys(item, sec);
+        }
         const id = item.id || (item.name || 'item-' + i).toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         const ref = colRef.doc(id);
 
@@ -1663,8 +1732,12 @@ async function importFromGitHub() {
           // get updated from the JSON.
           PROTECTED_FIELDS.forEach(f => delete item[f]);
           if (sec === 'nightlife') NIGHTLIFE_ADMIN_FIELDS.forEach(f => delete item[f]);
-          if (Object.keys(item).length === 0) continue;
-          batch.set(ref, item, { merge: true });
+          const existing = existingById.get(id);
+          const changes = Object.fromEntries(Object.entries(item).filter(([key, value]) =>
+            JSON.stringify(value) !== JSON.stringify(existing[key])
+          ));
+          if (Object.keys(changes).length === 0) continue;
+          batch.set(ref, changes, { merge: true });
           updated++;
         } else {
           // Brand new item - safe to write everything including image.
