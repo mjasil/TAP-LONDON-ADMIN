@@ -797,13 +797,27 @@ const SECTIONS = {
     cats: ['Food Offers', 'Shopping Offers', 'Hotel Offers', 'Kids Offers', 'Student Offers', 'Family Deals', 'Weekend Deals'],
     fields: [
       { key: 'name', label: 'Offer Name', type: 'text', required: true },
+      { key: 'publishStatus', label: 'Publication', type: 'select', options: ['Draft', 'Published'] },
+      { key: 'partnerConfirmed', label: 'Business agreed to this exact TAP offer', type: 'checkbox' },
+      { key: 'partnerAgreementRef', label: 'Agreement reference ID (do not paste private documents)', type: 'text' },
       { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
       { key: 'area', label: 'Area', type: 'text' },
       { key: 'description', label: 'Description', type: 'textarea' },
       { key: 'discount', label: 'Discount (e.g. 20% Off)', type: 'text' },
+      { key: 'terms', label: 'Exact eligibility and redemption terms', type: 'textarea' },
+      { key: 'redemptionInstructions', label: 'How to redeem', type: 'textarea' },
       { key: 'code', label: 'Discount Code', type: 'text' },
+      { key: 'validFrom', label: 'Valid From (YYYY-MM-DD)', type: 'text' },
       { key: 'validUntil', label: 'Valid Until (YYYY-MM-DD)', type: 'text' },
+      { key: 'sourceUrl', label: 'Official venue / offer URL', type: 'text' },
+      { key: 'verifiedAt', label: 'Last verified (YYYY-MM-DD)', type: 'text' },
+      { key: 'venueSection', label: 'Venue section (food, hotels, etc.)', type: 'text' },
+      { key: 'venueId', label: 'TAP venue ID', type: 'text' },
       { key: 'image', label: 'Image URL', type: 'image' },
+      { key: 'imageRightsConfirmed', label: 'Permission or licence confirmed for this offer photo', type: 'checkbox' },
+      { key: 'imageCredit', label: 'Photo credit', type: 'text' },
+      { key: 'imageLicense', label: 'Photo licence / permission', type: 'text' },
+      { key: 'imageSourceUrl', label: 'Photo source URL', type: 'text' },
       { key: 'gallery', label: 'Gallery (additional photos)', type: 'gallery' },
       { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
     ]
@@ -872,15 +886,28 @@ const SECTIONS = {
     cats: ['Free Events', 'Food Markets', 'Markets', 'Live Music', 'Nightlife', 'Pop-ups'],
     fields: [
       { key: 'name', label: 'Event Name', type: 'text', required: true },
+      { key: 'publishStatus', label: 'Publication', type: 'select', options: ['Draft', 'Published'] },
+      { key: 'cancelled', label: 'Cancelled — hide from website', type: 'checkbox' },
       { key: 'category', label: 'Category', type: 'select', optionsFrom: 'cats' },
       { key: 'area', label: 'Area', type: 'text' },
+      { key: 'address', label: 'Venue address', type: 'text' },
+      { key: 'organiser', label: 'Organiser', type: 'text' },
       { key: 'description', label: 'Description', type: 'textarea' },
       { key: 'startDate', label: 'Start Date (YYYY-MM-DD)', type: 'text' },
       { key: 'endDate', label: 'End Date (YYYY-MM-DD)', type: 'text' },
       { key: 'recurring', label: 'Recurring (e.g. "Every Sat-Sun")', type: 'text' },
       { key: 'time', label: 'Time (e.g. 10:00–17:00)', type: 'text' },
       { key: 'price', label: 'Price', type: 'text' },
+      { key: 'minimumAge', label: 'Minimum age (if known)', type: 'text' },
+      { key: 'accessibility', label: 'Accessibility (if verified)', type: 'text' },
+      { key: 'sourceUrl', label: 'Official organiser/source URL', type: 'text' },
+      { key: 'ticketUrl', label: 'Official ticket URL', type: 'text' },
+      { key: 'verifiedAt', label: 'Last verified (YYYY-MM-DD)', type: 'text' },
       { key: 'image', label: 'Image URL', type: 'image' },
+      { key: 'imageRightsConfirmed', label: 'Permission or licence confirmed for this event photo', type: 'checkbox' },
+      { key: 'imageCredit', label: 'Photo credit', type: 'text' },
+      { key: 'imageLicense', label: 'Photo licence / permission', type: 'text' },
+      { key: 'imageSourceUrl', label: 'Photo source URL', type: 'text' },
       { key: 'mapsUrl', label: 'Maps URL', type: 'text' },
     ]
   },
@@ -1206,7 +1233,7 @@ function renderModalFields(cfg, item) {
   const container = document.getElementById('modal-form-fields');
   window._galleryState = {};
   container.innerHTML = cfg.fields.map(f => {
-    let value = item[f.key] || (f.key === 'listingStatus' ? 'Listed' : f.key === 'contactStatus' ? 'Not contacted' : '');
+    let value = item[f.key] || (f.key === 'listingStatus' ? 'Listed' : f.key === 'contactStatus' ? 'Not contacted' : f.key === 'publishStatus' ? 'Draft' : '');
     if (f.key === 'tags' && Array.isArray(value)) value = value.join(', ');
     if (f.type === 'textarea') {
       return `<div class="form-group"><label>${f.label}</label><textarea id="field-${f.key}">${esc(value)}</textarea></div>`;
@@ -1574,6 +1601,46 @@ async function saveItem() {
     }
   }
 
+  if (currentSection === 'events' && data.publishStatus === 'Published') {
+    const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(value || '') && !Number.isNaN(Date.parse(value));
+    const checked = Date.parse(data.verifiedAt || '');
+    const londonParts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+    const londonPart = type => londonParts.find(part => part.type === type).value;
+    const londonToday = `${londonPart('year')}-${londonPart('month')}-${londonPart('day')}`;
+    if (!validDate(data.startDate) || !validDate(data.endDate) || data.endDate < data.startDate ||
+        data.endDate < londonToday) {
+      showToast('Publish only an upcoming/current event with a valid bounded date range', 'error');
+      return;
+    }
+    if (!/^https:\/\/\S+$/i.test(data.sourceUrl || '') ||
+        !Number.isFinite(checked) || checked > Date.now() || Date.now() - checked > 30 * 86400000) {
+      showToast('Add an official source and a verification date within the last 30 days', 'error');
+      return;
+    }
+    if (data.ticketUrl && !/^https:\/\/\S+$/i.test(data.ticketUrl)) {
+      showToast('Use a complete https:// URL for tickets', 'error');
+      return;
+    }
+  }
+
+  if (currentSection === 'offers' && data.publishStatus === 'Published') {
+    const checked = Date.parse(data.verifiedAt || '');
+    const londonParts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+    const londonPart = type => londonParts.find(part => part.type === type).value;
+    const londonToday = `${londonPart('year')}-${londonPart('month')}-${londonPart('day')}`;
+    if (!data.partnerConfirmed || !data.partnerAgreementRef || !data.terms ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(data.validUntil || '') || data.validUntil < londonToday ||
+        (data.validFrom && data.validFrom > data.validUntil)) {
+      showToast('A live TAP offer needs partner agreement, exact terms, and an unexpired date', 'error');
+      return;
+    }
+    if (!/^https:\/\/\S+$/i.test(data.sourceUrl || '') ||
+        !Number.isFinite(checked) || checked > Date.now() || Date.now() - checked > 30 * 86400000) {
+      showToast('Add an official source and a verification date within the last 30 days', 'error');
+      return;
+    }
+  }
+
   if (['places', 'food', 'nightlife', 'kids', 'hotels', 'shopping'].includes(currentSection)) {
     data.directoryKeys = directoryKeys(data, currentSection);
   }
@@ -1692,6 +1759,11 @@ async function importFromGitHub() {
     'websiteUrl', 'bookingUrl', 'instagramUrl', 'tiktokUrl', 'nearestStation',
     'vibe', 'audience', 'agePolicy', 'imageCredit', 'imageIsIllustrative',
   ];
+  const REVIEW_FIELDS = [
+    'publishStatus', 'verifiedAt', 'sourceUrl', 'ticketUrl', 'cancelled',
+    'imageRightsConfirmed', 'partnerConfirmed', 'partnerAgreementRef',
+    'terms', 'redemptionInstructions', 'validFrom', 'validUntil',
+  ];
 
   for (const sec of sections) {
     try {
@@ -1732,6 +1804,7 @@ async function importFromGitHub() {
           // get updated from the JSON.
           PROTECTED_FIELDS.forEach(f => delete item[f]);
           if (sec === 'nightlife') NIGHTLIFE_ADMIN_FIELDS.forEach(f => delete item[f]);
+          if (sec === 'events' || sec === 'offers') REVIEW_FIELDS.forEach(f => delete item[f]);
           const existing = existingById.get(id);
           const changes = Object.fromEntries(Object.entries(item).filter(([key, value]) =>
             JSON.stringify(value) !== JSON.stringify(existing[key])
